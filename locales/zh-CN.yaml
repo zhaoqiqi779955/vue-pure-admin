@@ -69,6 +69,8 @@ panel:
   pureMultiTagsCache: 页签持久化
 menus:
   pureHome: 首页
+  pureDashboard: 数据看板
+  pureZhongxinShort: 中信空单
   pureLogin: 登录
   pureEmpty: 无Layout页
   pureTable: 表格

@@ -69,6 +69,8 @@ panel:
   pureMultiTagsCache: MultiTags Cache
 menus:
   pureHome: Home
+  pureDashboard: Dashboard
+  pureZhongxinShort: Zhongxin Short
   pureLogin: Login
   pureEmpty: Empty Page
   pureTable: Table
