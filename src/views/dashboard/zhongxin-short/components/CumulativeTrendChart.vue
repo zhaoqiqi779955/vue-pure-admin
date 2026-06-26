@@ -5,6 +5,17 @@ import { computed, nextTick, ref, watch, type PropType } from "vue";
 export type TrendSeriesItem = {
   name: string;
   data: number[];
+  diffData: number[];
+};
+
+type TooltipItem = {
+  axisValueLabel?: string;
+  dataIndex?: number;
+  marker?: string;
+  name?: string;
+  seriesIndex?: number;
+  seriesName?: string;
+  value?: unknown;
 };
 
 const props = defineProps({
@@ -27,6 +38,47 @@ function formatChartValue(value: unknown) {
   return typeof value === "number" ? value.toLocaleString() : String(value);
 }
 
+function formatSignedChartValue(value: unknown) {
+  if (typeof value !== "number") return String(value);
+  return `${value > 0 ? "+" : ""}${value.toLocaleString()}`;
+}
+
+function isTooltipItem(value: unknown): value is TooltipItem {
+  return typeof value === "object" && value !== null;
+}
+
+function getTooltipItems(params: unknown) {
+  if (Array.isArray(params)) return params.filter(isTooltipItem);
+  return isTooltipItem(params) ? [params] : [];
+}
+
+function formatTooltip(params: unknown) {
+  const items = getTooltipItems(params);
+  if (!items.length) return "";
+
+  const title = items[0].axisValueLabel ?? items[0].name ?? "";
+  const content = items
+    .map(item => {
+      const series =
+        typeof item.seriesIndex === "number"
+          ? props.series[item.seriesIndex]
+          : undefined;
+      const dataIndex = typeof item.dataIndex === "number" ? item.dataIndex : 0;
+      const name = item.seriesName ?? series?.name ?? "";
+      const value = series?.data[dataIndex] ?? item.value;
+      const diffValue = series?.diffData[dataIndex];
+
+      return [
+        `${item.marker ?? ""}${name}`,
+        `当前值：${formatChartValue(value)}`,
+        `变化量：${formatSignedChartValue(diffValue)}`
+      ].join("<br/>");
+    })
+    .join("<br/>");
+
+  return `${title}<br/>${content}`;
+}
+
 watch(
   () => [props.dates, props.series],
   async () => {
@@ -35,7 +87,7 @@ watch(
     setOptions({
       tooltip: {
         trigger: "axis",
-        valueFormatter: formatChartValue
+        formatter: formatTooltip
       },
       legend: {
         top: 0,

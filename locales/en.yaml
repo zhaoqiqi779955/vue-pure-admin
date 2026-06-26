@@ -71,6 +71,8 @@ menus:
   pureHome: Home
   pureDashboard: Dashboard
   pureZhongxinShort: Zhongxin Short
+  pureScheduler: Scheduler
+  pureSchedulerTasks: Task Manage
   pureLogin: Login
   pureEmpty: Empty Page
   pureTable: Table

@@ -85,3 +85,12 @@ The system SHALL render both Zhongxin short position sections as bar charts.
 
 - **WHEN** any displayed value is negative
 - **THEN** the bar chart MUST preserve the signed value instead of converting it to an absolute value
+
+### Requirement: Render cumulative trend tooltip with diff values
+
+The system SHALL show both cumulative value and corresponding diff value when the user hovers over a point in the cumulative short position trend line chart.
+
+#### Scenario: Trend tooltip includes current and diff values
+
+- **WHEN** the user hovers over a point in the cumulative short position trend line chart
+- **THEN** the tooltip MUST show the current cumulative value and the corresponding `_diff` value for each displayed index line
