@@ -73,6 +73,7 @@ menus:
   pureZhongxinShort: 中信空单
   pureScheduler: 定时任务
   pureSchedulerTasks: 任务管理
+  pureTaskManagement: 任务管理
   pureLogin: 登录
   pureEmpty: 无Layout页
   pureTable: 表格

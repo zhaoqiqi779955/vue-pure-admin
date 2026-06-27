@@ -24,6 +24,8 @@
 
 环境约束来自 `package.json`：Node `>=22.22.1`，pnpm `>=11`。CI 中会执行 `pnpm lint` 和 `pnpm typecheck`。
 
+Codex 非交互 shell 的 `PATH` 可能不包含 Homebrew 目录；本机 `openspec` 和 `pnpm` 位于 `/opt/homebrew/bin`，需要时使用 `PATH=/opt/homebrew/bin:$PATH <command>` 执行。
+
 ## 架构速览
 
 ```mermaid
@@ -166,3 +168,8 @@ pnpm build
 ## 强制要求
 
 1. 优先复用已有的代码和组件，避免重复造轮子。
+
+# 配套后端服务信息
+
+后端服务idl：~/src/ecom_backend/idl/ecom.proto
+任务相关信息：~/src/ecom/doc/任务类型输入输出梳理.md

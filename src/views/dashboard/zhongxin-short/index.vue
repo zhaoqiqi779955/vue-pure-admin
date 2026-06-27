@@ -2,14 +2,19 @@
 import dayjs from "dayjs";
 import { computed, onMounted, ref } from "vue";
 import {
+  getCoreETFData,
   getMarketCoreData,
   getZhongxinFutureShortPosition,
+  type CoreETFDataItem,
   type MarketCoreDataItem,
   type ZhongxinFutureShortPositionItem
 } from "@/api/dashboard";
 import CumulativeTrendChart, {
   type TrendSeriesItem
 } from "./components/CumulativeTrendChart.vue";
+import CoreETFLineChart, {
+  type CoreETFLineSeriesItem
+} from "./components/CoreETFLineChart.vue";
 import MarketCoreTrendChart from "./components/MarketCoreTrendChart.vue";
 import ShortBarChart, {
   type ShortBarChartItem
@@ -31,10 +36,23 @@ type MarketCoreMetricConfig = {
   unit: string;
   color: string;
 };
+type CoreETFMetricField = "share_yi" | "unit_nav";
+type CoreETFSummaryItem = {
+  code: string;
+  name: string;
+  shareYi: string;
+  unitNav: string;
+};
 
 const loading = ref(false);
 const errorMessage = ref("");
 const latestItem = ref<ZhongxinFutureShortPositionItem>();
+const coreETFLoading = ref(false);
+const coreETFErrorMessage = ref("");
+const latestCoreETFItem = ref<CoreETFDataItem>();
+const coreETFTrendLoading = ref(false);
+const coreETFTrendErrorMessage = ref("");
+const coreETFTrendItems = ref<CoreETFDataItem[]>([]);
 const marketCoreLoading = ref(false);
 const marketCoreErrorMessage = ref("");
 const latestMarketCoreItem = ref<MarketCoreDataItem>();
@@ -51,6 +69,10 @@ const trendDateRange = ref<[string, string]>([
   dayjs().format("YYYY-MM-DD")
 ]);
 const marketCoreTrendDateRange = ref<[string, string]>([
+  dayjs().subtract(6, "month").format("YYYY-MM-DD"),
+  dayjs().format("YYYY-MM-DD")
+]);
+const coreETFTrendDateRange = ref<[string, string]>([
   dayjs().subtract(6, "month").format("YYYY-MM-DD"),
   dayjs().format("YYYY-MM-DD")
 ]);
@@ -111,6 +133,7 @@ const marketCoreMetrics = [
 const selectedMarketCoreMetric = ref<MarketCoreMetricConfig>(
   marketCoreMetrics[0]
 );
+const coreETFOrder = ["510300", "510500", "512100"] as const;
 
 function getTimestamp(date: string) {
   const timestamp = new Date(date).getTime();
@@ -124,6 +147,12 @@ function getLatestItem(items: ZhongxinFutureShortPositionItem[]) {
 }
 
 function getLatestMarketCoreItem(items: MarketCoreDataItem[]) {
+  return [...items]
+    .filter(item => item && item.date)
+    .sort((prev, next) => getTimestamp(next.date) - getTimestamp(prev.date))[0];
+}
+
+function getLatestCoreETFItem(items: CoreETFDataItem[]) {
   return [...items]
     .filter(item => item && item.date)
     .sort((prev, next) => getTimestamp(next.date) - getTimestamp(prev.date))[0];
@@ -155,6 +184,56 @@ function formatMarketCoreValue(
   return value.toLocaleString();
 }
 
+function getFiniteValue(value: unknown) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : null;
+}
+
+function formatNullableValue(value: unknown) {
+  const numericValue = getFiniteValue(value);
+  return numericValue === null ? "-" : numericValue.toLocaleString();
+}
+
+function getCoreETFName(code: string) {
+  const items = [
+    latestCoreETFItem.value,
+    ...sortedCoreETFTrendItems.value
+  ].filter(Boolean) as CoreETFDataItem[];
+
+  for (const item of items) {
+    const name = item.etfs?.[code]?.name;
+    if (name) return name;
+  }
+
+  return code;
+}
+
+function getOrderedCoreETFCodes(items: CoreETFDataItem[]) {
+  const codeSet = new Set<string>();
+
+  items.forEach(item => {
+    Object.keys(item.etfs ?? {}).forEach(code => codeSet.add(code));
+  });
+
+  return [
+    ...coreETFOrder.filter(code => codeSet.has(code)),
+    ...[...codeSet]
+      .filter(
+        code => !coreETFOrder.includes(code as (typeof coreETFOrder)[number])
+      )
+      .sort()
+  ];
+}
+
+function toCoreETFSeries(field: CoreETFMetricField): CoreETFLineSeriesItem[] {
+  return coreETFCodes.value.map(code => ({
+    name: getCoreETFName(code),
+    data: sortedCoreETFTrendItems.value.map(item =>
+      getFiniteValue(item.etfs?.[code]?.[field])
+    )
+  }));
+}
+
 function toChartData(
   item: ZhongxinFutureShortPositionItem | undefined,
   fields: ReadonlyArray<ShortField>
@@ -169,6 +248,9 @@ function toChartData(
 
 const hasData = computed(() => Boolean(latestItem.value));
 const hasMarketCoreData = computed(() => Boolean(latestMarketCoreItem.value));
+const hasCoreETFData = computed(
+  () => Object.keys(latestCoreETFItem.value?.etfs ?? {}).length > 0
+);
 
 const marketCoreMetricCards = computed(() =>
   marketCoreMetrics.map(metric => ({
@@ -195,12 +277,22 @@ const sortedMarketCoreTrendItems = computed(() =>
     .sort((prev, next) => getTimestamp(prev.date) - getTimestamp(next.date))
 );
 
+const sortedCoreETFTrendItems = computed(() =>
+  [...coreETFTrendItems.value]
+    .filter(item => item && item.date)
+    .sort((prev, next) => getTimestamp(prev.date) - getTimestamp(next.date))
+);
+
 const trendDates = computed(() =>
   sortedTrendItems.value.map(item => item.date)
 );
 
 const marketCoreTrendDates = computed(() =>
   sortedMarketCoreTrendItems.value.map(item => item.date)
+);
+
+const coreETFTrendDates = computed(() =>
+  sortedCoreETFTrendItems.value.map(item => item.date)
 );
 
 const trendSeries = computed<TrendSeriesItem[]>(() =>
@@ -223,6 +315,31 @@ const marketCoreTrendValues = computed(() =>
 );
 const hasMarketCoreTrendData = computed(
   () => sortedMarketCoreTrendItems.value.length > 0
+);
+const coreETFCodes = computed(() =>
+  getOrderedCoreETFCodes(
+    [latestCoreETFItem.value, ...sortedCoreETFTrendItems.value].filter(
+      Boolean
+    ) as CoreETFDataItem[]
+  )
+);
+const coreETFSummaryItems = computed<CoreETFSummaryItem[]>(() =>
+  coreETFCodes.value.map(code => {
+    const etf = latestCoreETFItem.value?.etfs?.[code];
+
+    return {
+      code,
+      name: etf?.name || getCoreETFName(code),
+      shareYi: formatNullableValue(etf?.share_yi),
+      unitNav: formatNullableValue(etf?.unit_nav)
+    };
+  })
+);
+const coreETFShareSeries = computed(() => toCoreETFSeries("share_yi"));
+const coreETFUnitNavSeries = computed(() => toCoreETFSeries("unit_nav"));
+const hasCoreETFTrendData = computed(
+  () =>
+    sortedCoreETFTrendItems.value.length > 0 && coreETFCodes.value.length > 0
 );
 
 async function loadData() {
@@ -252,6 +369,24 @@ async function loadMarketCoreData() {
     marketCoreErrorMessage.value = "大盘核心数据加载失败，请稍后重试";
   } finally {
     marketCoreLoading.value = false;
+  }
+}
+
+async function loadCoreETFData() {
+  coreETFLoading.value = true;
+  coreETFErrorMessage.value = "";
+
+  try {
+    const { items } = await getCoreETFData();
+    latestCoreETFItem.value = getLatestCoreETFItem(items ?? []);
+    resetCoreETFTrendDateRange();
+    await loadCoreETFTrendData();
+  } catch {
+    latestCoreETFItem.value = undefined;
+    coreETFTrendItems.value = [];
+    coreETFErrorMessage.value = "核心 ETF 数据加载失败，请稍后重试";
+  } finally {
+    coreETFLoading.value = false;
   }
 }
 
@@ -295,6 +430,26 @@ async function loadMarketCoreTrendData() {
   }
 }
 
+async function loadCoreETFTrendData() {
+  const [start_date, end_date] = coreETFTrendDateRange.value;
+
+  coreETFTrendLoading.value = true;
+  coreETFTrendErrorMessage.value = "";
+
+  try {
+    const { items } = await getCoreETFData({
+      start_date,
+      end_date
+    });
+    coreETFTrendItems.value = items ?? [];
+  } catch {
+    coreETFTrendItems.value = [];
+    coreETFTrendErrorMessage.value = "核心 ETF 趋势加载失败，请稍后重试";
+  } finally {
+    coreETFTrendLoading.value = false;
+  }
+}
+
 function openTrendDialog() {
   trendDialogVisible.value = true;
   loadTrendData();
@@ -305,6 +460,22 @@ function getMarketCoreTrendEndDate() {
   return latestDate && getTimestamp(latestDate)
     ? latestDate
     : dayjs().format("YYYY-MM-DD");
+}
+
+function getCoreETFTrendEndDate() {
+  const latestDate = latestCoreETFItem.value?.date;
+  return latestDate && getTimestamp(latestDate)
+    ? latestDate
+    : dayjs().format("YYYY-MM-DD");
+}
+
+function resetCoreETFTrendDateRange() {
+  const endDate = getCoreETFTrendEndDate();
+
+  coreETFTrendDateRange.value = [
+    dayjs(endDate).subtract(6, "month").format("YYYY-MM-DD"),
+    endDate
+  ];
 }
 
 function openMarketCoreTrendDialog(metric: MarketCoreMetricConfig) {
@@ -321,6 +492,7 @@ function openMarketCoreTrendDialog(metric: MarketCoreMetricConfig) {
 
 onMounted(() => {
   loadMarketCoreData();
+  loadCoreETFData();
   loadData();
 });
 </script>
@@ -391,6 +563,128 @@ onMounted(() => {
           </div>
         </el-col>
       </el-row>
+    </el-card>
+
+    <el-card shadow="never" class="mb-4">
+      <div class="mb-4 flex-bc flex-wrap gap-3">
+        <div>
+          <h2 class="text-lg font-medium">核心 ETF 数据</h2>
+        </div>
+        <div class="flex items-center gap-3">
+          <span
+            v-if="latestCoreETFItem?.date"
+            class="text-sm text-text_color_regular"
+          >
+            数据日期：{{ latestCoreETFItem.date }}
+          </span>
+          <el-button :loading="coreETFLoading" @click="loadCoreETFData">
+            刷新
+          </el-button>
+        </div>
+      </div>
+
+      <el-alert
+        v-if="coreETFErrorMessage"
+        class="mb-4"
+        :title="coreETFErrorMessage"
+        type="error"
+        show-icon
+        :closable="false"
+      />
+
+      <el-skeleton v-if="coreETFLoading" :rows="4" animated />
+
+      <el-empty v-else-if="!hasCoreETFData" description="暂无核心 ETF 数据" />
+
+      <template v-else>
+        <el-row :gutter="16">
+          <el-col
+            v-for="item in coreETFSummaryItems"
+            :key="item.code"
+            :xs="24"
+            :md="8"
+            class="mb-4"
+          >
+            <div class="rounded-lg border border-(--el-border-color-light) p-4">
+              <div class="flex-bc gap-3">
+                <div>
+                  <div class="font-medium">{{ item.name }}</div>
+                  <div class="mt-1 text-xs text-text_color_regular">
+                    {{ item.code }}
+                  </div>
+                </div>
+              </div>
+              <div class="mt-4 grid grid-cols-2 gap-3">
+                <div>
+                  <div class="text-xs text-text_color_regular">基金份额</div>
+                  <div class="mt-1 flex items-baseline gap-1">
+                    <span class="text-xl font-semibold">
+                      {{ item.shareYi }}
+                    </span>
+                    <span class="text-xs text-text_color_regular">亿份</span>
+                  </div>
+                </div>
+                <div>
+                  <div class="text-xs text-text_color_regular">单位净值</div>
+                  <div class="mt-1 text-xl font-semibold">
+                    {{ item.unitNav }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </el-col>
+        </el-row>
+
+        <div class="mb-4 flex-bc flex-wrap gap-3">
+          <span class="text-sm text-text_color_regular">趋势日期</span>
+          <el-date-picker
+            v-model="coreETFTrendDateRange"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            value-format="YYYY-MM-DD"
+            :clearable="false"
+            @change="loadCoreETFTrendData"
+          />
+        </div>
+
+        <el-alert
+          v-if="coreETFTrendErrorMessage"
+          class="mb-4"
+          :title="coreETFTrendErrorMessage"
+          type="error"
+          show-icon
+          :closable="false"
+        />
+
+        <el-skeleton v-if="coreETFTrendLoading" :rows="8" animated />
+        <el-empty
+          v-else-if="!hasCoreETFTrendData"
+          description="暂无核心 ETF 趋势数据"
+        />
+        <el-row v-else :gutter="16">
+          <el-col :xs="24" :lg="12" class="mb-4">
+            <div class="rounded-lg border border-(--el-border-color-light) p-4">
+              <div class="mb-3 font-medium">基金份额趋势</div>
+              <CoreETFLineChart
+                :dates="coreETFTrendDates"
+                :series="coreETFShareSeries"
+                unit="亿份"
+              />
+            </div>
+          </el-col>
+          <el-col :xs="24" :lg="12" class="mb-4">
+            <div class="rounded-lg border border-(--el-border-color-light) p-4">
+              <div class="mb-3 font-medium">单位净值趋势</div>
+              <CoreETFLineChart
+                :dates="coreETFTrendDates"
+                :series="coreETFUnitNavSeries"
+              />
+            </div>
+          </el-col>
+        </el-row>
+      </template>
     </el-card>
 
     <el-card shadow="never" class="mb-4">
