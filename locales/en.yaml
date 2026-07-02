@@ -69,11 +69,13 @@ panel:
   pureMultiTagsCache: MultiTags Cache
 menus:
   pureHome: Home
-  pureDashboard: Dashboard
-  pureZhongxinShort: Zhongxin Short
+  pureDashboard: Data Dashboard
+  pureZhongxinShort: Core Data
   pureScheduler: Scheduler
-  pureSchedulerTasks: Task Manage
+  pureSchedulerTasks: Scheduled Tasks
+  pureTaskManagementRoot: Task Management
   pureTaskManagement: Task Management
+  pureTaskManagementTasks: Task List
   pureLogin: Login
   pureEmpty: Empty Page
   pureTable: Table

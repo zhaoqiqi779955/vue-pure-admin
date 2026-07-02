@@ -2,18 +2,18 @@
 
 ## Purpose
 
-Define the Zhongxin short position dashboard menu, data loading, field grouping, label mapping, and bar chart rendering behavior.
+Define the Zhongxin short position core dashboard menu, data loading, field grouping, label mapping, and bar chart rendering behavior.
 
 ## Requirements
 
 ### Requirement: Dashboard menu entry
 
-The system SHALL provide a top-level `dashboard` menu entry for data dashboard pages.
+The system SHALL provide a top-level `dashboard` menu entry labeled `核心看板` for core dashboard pages.
 
 #### Scenario: Dashboard appears as top-level menu
 
 - **WHEN** the application loads available static routes
-- **THEN** the navigation menu MUST include a top-level dashboard entry
+- **THEN** the navigation menu MUST include a top-level dashboard entry displayed as `核心看板`
 
 #### Scenario: Zhongxin short position page is reachable
 

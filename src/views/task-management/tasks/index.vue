@@ -6,6 +6,7 @@ import { useRenderIcon } from "@/components/ReIcon/src/hooks";
 
 import Delete from "~icons/ep/delete";
 import EditPen from "~icons/ep/edit-pen";
+import CopyDocument from "~icons/ep/copy-document";
 import Refresh from "~icons/ep/refresh";
 import AddFill from "~icons/ri/add-circle-line";
 
@@ -22,9 +23,11 @@ const {
   columns,
   dataList,
   pagination,
+  taskTypeOptions,
   onSearch,
   resetForm,
   openDialog,
+  handleCopy,
   handleDelete,
   handleSizeChange,
   handleCurrentChange
@@ -44,14 +47,19 @@ function onFullscreen() {
       class="search-form bg-bg_color w-full pl-8 pt-3 overflow-auto"
     >
       <el-form-item label="任务类型" prop="task_type">
-        <el-input-number
+        <el-select
           v-model="form.task_type"
-          :min="0"
-          :precision="0"
-          controls-position="right"
-          placeholder="请输入任务类型"
+          placeholder="请选择任务类型"
+          clearable
           class="w-45!"
-        />
+        >
+          <el-option
+            v-for="item in taskTypeOptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
       </el-form-item>
       <el-form-item label="状态" prop="status">
         <el-input
@@ -134,6 +142,16 @@ function onFullscreen() {
               @click="openDialog('编辑', row)"
             >
               编辑
+            </el-button>
+            <el-button
+              class="reset-margin"
+              link
+              type="primary"
+              :size="size"
+              :icon="useRenderIcon(CopyDocument)"
+              @click="handleCopy(row)"
+            >
+              复制
             </el-button>
             <el-button
               class="reset-margin"

@@ -73,7 +73,7 @@ const marketCoreTrendDateRange = ref<[string, string]>([
   dayjs().format("YYYY-MM-DD")
 ]);
 const coreETFTrendDateRange = ref<[string, string]>([
-  dayjs().subtract(6, "month").format("YYYY-MM-DD"),
+  dayjs().subtract(1, "year").format("YYYY-MM-DD"),
   dayjs().format("YYYY-MM-DD")
 ]);
 
@@ -473,7 +473,7 @@ function resetCoreETFTrendDateRange() {
   const endDate = getCoreETFTrendEndDate();
 
   coreETFTrendDateRange.value = [
-    dayjs(endDate).subtract(6, "month").format("YYYY-MM-DD"),
+    dayjs(endDate).subtract(1, "year").format("YYYY-MM-DD"),
     endDate
   ];
 }

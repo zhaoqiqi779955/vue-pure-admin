@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { formRules } from "./utils/rule";
+import { taskTypeOptions } from "./utils/taskType";
 import type { FormProps } from "./utils/types";
 
 const props = withDefaults(defineProps<FormProps>(), {
@@ -31,14 +32,18 @@ defineExpose({ getRef });
     label-width="100px"
   >
     <el-form-item label="任务类型" prop="task_type">
-      <el-input-number
+      <el-select
         v-model="newFormInline.task_type"
-        :min="0"
-        :precision="0"
-        controls-position="right"
         class="w-full!"
-        placeholder="请输入任务类型"
-      />
+        placeholder="请选择任务类型"
+      >
+        <el-option
+          v-for="item in taskTypeOptions"
+          :key="item.value"
+          :label="item.label"
+          :value="item.value"
+        />
+      </el-select>
     </el-form-item>
 
     <el-form-item label="输入" prop="input">

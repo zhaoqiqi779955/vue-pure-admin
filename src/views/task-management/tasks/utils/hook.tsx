@@ -6,6 +6,7 @@ import { deviceDetection } from "@pureadmin/utils";
 import { ElMessageBox } from "element-plus";
 import type { PaginationProps } from "@pureadmin/table";
 import type { FormItemProps } from "./types";
+import { getTaskTypeLabel, taskTypeOptions } from "./taskType";
 import {
   createTaskManagement,
   deleteTaskManagement,
@@ -63,8 +64,8 @@ export function useTaskManagementTasks() {
     {
       label: "任务类型",
       prop: "task_type",
-      minWidth: 100,
-      formatter: ({ task_type }) => formatEmpty(task_type)
+      minWidth: 160,
+      formatter: ({ task_type }) => getTaskTypeLabel(task_type)
     },
     {
       label: "输入",
@@ -110,7 +111,7 @@ export function useTaskManagementTasks() {
     {
       label: "操作",
       fixed: "right",
-      width: 150,
+      width: 210,
       slot: "operation"
     }
   ];
@@ -166,7 +167,9 @@ export function useTaskManagementTasks() {
     onSearch();
   }
 
-  function openDialog(title = "新增", row?: TaskManagementItem) {
+  function openDialog(title = "新增", row?: Partial<TaskManagementItem>) {
+    const isEdit = title === "编辑" && Boolean(row?.id);
+
     addDialog({
       title: `${title}任务`,
       props: {
@@ -175,7 +178,7 @@ export function useTaskManagementTasks() {
           input: row?.input ?? "",
           output: row?.output ?? "",
           status: row?.status ?? "",
-          isEdit: Boolean(row?.id)
+          isEdit
         }
       },
       width: "40%",
@@ -193,7 +196,7 @@ export function useTaskManagementTasks() {
           if (curData.task_type === undefined) return;
 
           try {
-            if (row?.id) {
+            if (isEdit && row?.id) {
               await updateTaskManagement(row.id, {
                 task_type: curData.task_type,
                 input: curData.input,
@@ -215,6 +218,13 @@ export function useTaskManagementTasks() {
           }
         });
       }
+    });
+  }
+
+  function handleCopy(row: TaskManagementItem) {
+    openDialog("新增", {
+      task_type: row.task_type,
+      input: row.input
     });
   }
 
@@ -258,9 +268,11 @@ export function useTaskManagementTasks() {
     columns,
     dataList,
     pagination,
+    taskTypeOptions,
     onSearch,
     resetForm,
     openDialog,
+    handleCopy,
     handleDelete,
     handleSizeChange,
     handleCurrentChange

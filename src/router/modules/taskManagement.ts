@@ -9,7 +9,7 @@ export default {
   redirect: "/task-management/tasks",
   meta: {
     icon: "ri/task-line",
-    title: $t("menus.pureTaskManagement"),
+    title: $t("menus.pureTaskManagementRoot"),
     rank: taskManagement
   },
   children: [
@@ -18,7 +18,7 @@ export default {
       name: "TaskManagementTasks",
       component: () => import("@/views/task-management/tasks/index.vue"),
       meta: {
-        title: $t("menus.pureTaskManagement")
+        title: $t("menus.pureTaskManagementTasks")
       }
     }
   ]

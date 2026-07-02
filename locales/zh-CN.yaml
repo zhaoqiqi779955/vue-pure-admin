@@ -70,10 +70,12 @@ panel:
 menus:
   pureHome: 首页
   pureDashboard: 数据看板
-  pureZhongxinShort: 中信空单
+  pureZhongxinShort: 核心数据
   pureScheduler: 定时任务
-  pureSchedulerTasks: 任务管理
+  pureSchedulerTasks: 定时任务
+  pureTaskManagementRoot: 任务管理
   pureTaskManagement: 任务管理
+  pureTaskManagementTasks: 任务列表
   pureLogin: 登录
   pureEmpty: 无Layout页
   pureTable: 表格
