@@ -8,17 +8,19 @@ Define the Dashboard core ETF data panel, latest-data loading, ETF metric displa
 
 ### Requirement: Fetch latest core ETF data by default
 
-The system SHALL request the latest core ETF data from `GET /api/data/etf/core` without query parameters when the Dashboard page loads.
+The system SHALL request the latest core ETF data from `GET /api/dashboard/daily` with the fixed `core_etf` data type and a valid date range when the Dashboard page loads.
 
 #### Scenario: Default core ETF request
 
 - **WHEN** the user enters the Dashboard page
-- **THEN** the frontend MUST call `/api/data/etf/core` without `start_date` or `end_date`
+- **THEN** the frontend MUST call `/api/dashboard/daily` with `data_type=core_etf`
+- **AND** the frontend MUST provide `start_date` and `end_date` covering no more than 366 natural days
 
 #### Scenario: Latest core ETF record selection
 
 - **WHEN** the API returns one or more `items`
 - **THEN** the page MUST use the item with the latest `date` as the current core ETF record
+- **AND** the page MUST read the ETF code mapping from `items[].value`
 
 #### Scenario: Empty core ETF response
 
@@ -52,18 +54,18 @@ The system SHALL fetch core ETF trend data with `start_date` and `end_date` quer
 #### Scenario: Default trend range
 
 - **WHEN** the core ETF trend charts load
-- **THEN** the frontend MUST request `/api/data/etf/core` with a default recent-one-year date range
+- **THEN** the frontend MUST request `/api/dashboard/daily` with `data_type=core_etf` and a default recent-366-natural-day date range
 
 #### Scenario: Trend range is centered on latest ETF data date
 
 - **WHEN** the latest core ETF record has a valid `date`
 - **THEN** the default trend `end_date` MUST use that latest date
-- **AND** the default trend `start_date` MUST be one year before that latest date
+- **AND** the default trend `start_date` MUST be 365 days before that latest date
 
 #### Scenario: User changes trend range
 
 - **WHEN** the user changes the trend date range
-- **THEN** the frontend MUST reload `/api/data/etf/core` with the selected `start_date` and `end_date`
+- **THEN** the frontend MUST reload `/api/dashboard/daily` with `data_type=core_etf` and the selected `start_date` and `end_date`
 
 ### Requirement: Render core ETF fund share line chart
 

@@ -71,8 +71,9 @@ menus:
   pureHome: 首页
   pureDashboard: 数据看板
   pureZhongxinShort: 核心数据
-  pureScheduler: 定时任务
-  pureSchedulerTasks: 定时任务
+  pureMacroLiquidity: 宏观流动性
+  pureScheduler: 数据更新记录
+  pureSchedulerTasks: 数据更新记录
   pureTaskManagementRoot: 任务管理
   pureTaskManagement: 任务管理
   pureTaskManagementTasks: 任务列表

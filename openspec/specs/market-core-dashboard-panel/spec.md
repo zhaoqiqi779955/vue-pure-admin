@@ -8,12 +8,12 @@ Define the Dashboard market core data panel, latest-data loading, metric display
 
 ### Requirement: Fetch latest market core data by default
 
-The system SHALL request the latest market core data from `GET /api/data/market/core` without query parameters when the Dashboard page loads.
+The system SHALL request `GET /api/dashboard/daily` with `data_type=market_core` and a closed date range no longer than 366 calendar days when the Dashboard page loads. The frontend SHALL unwrap each daily-dashboard item's `value` object for the existing market-core panel.
 
 #### Scenario: Default market core request
 
 - **WHEN** the user enters the Dashboard page
-- **THEN** the frontend MUST call `/api/data/market/core` without `start_date` or `end_date`
+- **THEN** the frontend MUST call `/api/dashboard/daily` with `data_type=market_core`, an end date of the current date, and a start date 365 days earlier
 
 #### Scenario: Latest market core record selection
 
@@ -62,12 +62,12 @@ The system SHALL allow users to click each market core metric and open a trend d
 
 ### Requirement: Fetch market core trend by date range
 
-The system SHALL fetch market core trend data with `start_date` and `end_date` query parameters.
+The system SHALL fetch market core trend data from `GET /api/dashboard/daily` with `data_type=market_core`, `start_date`, and `end_date` query parameters.
 
 #### Scenario: Default trend range
 
 - **WHEN** a market core metric trend dialog opens
-- **THEN** the frontend MUST request `/api/data/market/core` with a default recent-half-year date range
+- **THEN** the frontend MUST request `/api/dashboard/daily` with `data_type=market_core` and a default recent-half-year date range
 
 #### Scenario: Trend range is centered on latest data date
 
@@ -78,7 +78,7 @@ The system SHALL fetch market core trend data with `start_date` and `end_date` q
 #### Scenario: User changes trend range
 
 - **WHEN** the user changes the trend date range
-- **THEN** the frontend MUST reload `/api/data/market/core` with the selected `start_date` and `end_date`
+- **THEN** the frontend MUST reload `/api/dashboard/daily` with `data_type=market_core` and the selected `start_date` and `end_date`
 
 ### Requirement: Render market core single metric line chart
 

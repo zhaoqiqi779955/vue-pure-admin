@@ -3,9 +3,11 @@ import dayjs from "dayjs";
 import { computed, onMounted, ref } from "vue";
 import {
   getCoreETFData,
+  getDividendLowVolData,
   getMarketCoreData,
   getZhongxinFutureShortPosition,
   type CoreETFDataItem,
+  type DividendLowVolDataItem,
   type MarketCoreDataItem,
   type ZhongxinFutureShortPositionItem
 } from "@/api/dashboard";
@@ -15,6 +17,9 @@ import CumulativeTrendChart, {
 import CoreETFLineChart, {
   type CoreETFLineSeriesItem
 } from "./components/CoreETFLineChart.vue";
+import DividendLowVolTrendChart, {
+  type DividendLowVolTrendSeriesItem
+} from "./components/DividendLowVolTrendChart.vue";
 import MarketCoreTrendChart from "./components/MarketCoreTrendChart.vue";
 import ShortBarChart, {
   type ShortBarChartItem
@@ -43,6 +48,12 @@ type CoreETFSummaryItem = {
   shareYi: string;
   unitNav: string;
 };
+type DividendLowVolMetricConfig = {
+  field: "index_level" | "dividend_yield_percent";
+  label: string;
+  unit: string;
+  color: string;
+};
 
 const loading = ref(false);
 const errorMessage = ref("");
@@ -60,6 +71,13 @@ const marketCoreTrendDialogVisible = ref(false);
 const marketCoreTrendLoading = ref(false);
 const marketCoreTrendErrorMessage = ref("");
 const marketCoreTrendItems = ref<MarketCoreDataItem[]>([]);
+const dividendLowVolLoading = ref(false);
+const dividendLowVolErrorMessage = ref("");
+const latestDividendLowVolItem = ref<DividendLowVolDataItem>();
+const dividendLowVolTrendDialogVisible = ref(false);
+const dividendLowVolTrendLoading = ref(false);
+const dividendLowVolTrendErrorMessage = ref("");
+const dividendLowVolTrendItems = ref<DividendLowVolDataItem[]>([]);
 const trendDialogVisible = ref(false);
 const trendLoading = ref(false);
 const trendErrorMessage = ref("");
@@ -72,8 +90,12 @@ const marketCoreTrendDateRange = ref<[string, string]>([
   dayjs().subtract(6, "month").format("YYYY-MM-DD"),
   dayjs().format("YYYY-MM-DD")
 ]);
+const dividendLowVolTrendDateRange = ref<[string, string]>([
+  dayjs().subtract(365, "day").format("YYYY-MM-DD"),
+  dayjs().format("YYYY-MM-DD")
+]);
 const coreETFTrendDateRange = ref<[string, string]>([
-  dayjs().subtract(1, "year").format("YYYY-MM-DD"),
+  dayjs().subtract(365, "day").format("YYYY-MM-DD"),
   dayjs().format("YYYY-MM-DD")
 ]);
 
@@ -130,6 +152,21 @@ const marketCoreMetrics = [
   }
 ] as const satisfies ReadonlyArray<MarketCoreMetricConfig>;
 
+const dividendLowVolMetrics = [
+  {
+    field: "index_level",
+    label: "指数点位",
+    unit: "点",
+    color: "#c45656"
+  },
+  {
+    field: "dividend_yield_percent",
+    label: "D/P1 股息率",
+    unit: "%",
+    color: "#e6a23c"
+  }
+] as const satisfies ReadonlyArray<DividendLowVolMetricConfig>;
+
 const selectedMarketCoreMetric = ref<MarketCoreMetricConfig>(
   marketCoreMetrics[0]
 );
@@ -147,6 +184,12 @@ function getLatestItem(items: ZhongxinFutureShortPositionItem[]) {
 }
 
 function getLatestMarketCoreItem(items: MarketCoreDataItem[]) {
+  return [...items]
+    .filter(item => item && item.date)
+    .sort((prev, next) => getTimestamp(next.date) - getTimestamp(prev.date))[0];
+}
+
+function getLatestDividendLowVolItem(items: DividendLowVolDataItem[]) {
   return [...items]
     .filter(item => item && item.date)
     .sort((prev, next) => getTimestamp(next.date) - getTimestamp(prev.date))[0];
@@ -194,6 +237,16 @@ function formatNullableValue(value: unknown) {
   return numericValue === null ? "-" : numericValue.toLocaleString();
 }
 
+function formatMetricValue(value: unknown, fractionDigits = 2) {
+  const numericValue = getFiniteValue(value);
+  if (numericValue === null) return "-";
+
+  return numericValue.toLocaleString(undefined, {
+    maximumFractionDigits: fractionDigits,
+    minimumFractionDigits: fractionDigits
+  });
+}
+
 function getCoreETFName(code: string) {
   const items = [
     latestCoreETFItem.value,
@@ -201,7 +254,7 @@ function getCoreETFName(code: string) {
   ].filter(Boolean) as CoreETFDataItem[];
 
   for (const item of items) {
-    const name = item.etfs?.[code]?.name;
+    const name = item.value?.[code]?.name;
     if (name) return name;
   }
 
@@ -212,7 +265,7 @@ function getOrderedCoreETFCodes(items: CoreETFDataItem[]) {
   const codeSet = new Set<string>();
 
   items.forEach(item => {
-    Object.keys(item.etfs ?? {}).forEach(code => codeSet.add(code));
+    Object.keys(item.value ?? {}).forEach(code => codeSet.add(code));
   });
 
   return [
@@ -229,7 +282,7 @@ function toCoreETFSeries(field: CoreETFMetricField): CoreETFLineSeriesItem[] {
   return coreETFCodes.value.map(code => ({
     name: getCoreETFName(code),
     data: sortedCoreETFTrendItems.value.map(item =>
-      getFiniteValue(item.etfs?.[code]?.[field])
+      getFiniteValue(item.value?.[code]?.[field])
     )
   }));
 }
@@ -248,14 +301,27 @@ function toChartData(
 
 const hasData = computed(() => Boolean(latestItem.value));
 const hasMarketCoreData = computed(() => Boolean(latestMarketCoreItem.value));
+const hasDividendLowVolData = computed(() =>
+  Boolean(latestDividendLowVolItem.value)
+);
 const hasCoreETFData = computed(
-  () => Object.keys(latestCoreETFItem.value?.etfs ?? {}).length > 0
+  () => Object.keys(latestCoreETFItem.value?.value ?? {}).length > 0
 );
 
 const marketCoreMetricCards = computed(() =>
   marketCoreMetrics.map(metric => ({
     ...metric,
     value: formatMarketCoreValue(latestMarketCoreItem.value, metric.field)
+  }))
+);
+
+const dividendLowVolMetricCards = computed(() =>
+  dividendLowVolMetrics.map(metric => ({
+    ...metric,
+    value: formatMetricValue(
+      latestDividendLowVolItem.value?.[metric.field],
+      metric.field === "index_level" ? 2 : 2
+    )
   }))
 );
 
@@ -277,6 +343,12 @@ const sortedMarketCoreTrendItems = computed(() =>
     .sort((prev, next) => getTimestamp(prev.date) - getTimestamp(next.date))
 );
 
+const sortedDividendLowVolTrendItems = computed(() =>
+  [...dividendLowVolTrendItems.value]
+    .filter(item => item && item.date)
+    .sort((prev, next) => getTimestamp(prev.date) - getTimestamp(next.date))
+);
+
 const sortedCoreETFTrendItems = computed(() =>
   [...coreETFTrendItems.value]
     .filter(item => item && item.date)
@@ -289,6 +361,10 @@ const trendDates = computed(() =>
 
 const marketCoreTrendDates = computed(() =>
   sortedMarketCoreTrendItems.value.map(item => item.date)
+);
+
+const dividendLowVolTrendDates = computed(() =>
+  sortedDividendLowVolTrendItems.value.map(item => item.date)
 );
 
 const coreETFTrendDates = computed(() =>
@@ -316,6 +392,29 @@ const marketCoreTrendValues = computed(() =>
 const hasMarketCoreTrendData = computed(
   () => sortedMarketCoreTrendItems.value.length > 0
 );
+const dividendLowVolTrendSeries = computed<DividendLowVolTrendSeriesItem[]>(
+  () => [
+    {
+      name: "指数点位",
+      unit: "点",
+      yAxisIndex: 0,
+      data: sortedDividendLowVolTrendItems.value.map(item =>
+        getFiniteValue(item.index_level)
+      )
+    },
+    {
+      name: "D/P1 股息率",
+      unit: "%",
+      yAxisIndex: 1,
+      data: sortedDividendLowVolTrendItems.value.map(item =>
+        getFiniteValue(item.dividend_yield_percent)
+      )
+    }
+  ]
+);
+const hasDividendLowVolTrendData = computed(
+  () => sortedDividendLowVolTrendItems.value.length > 0
+);
 const coreETFCodes = computed(() =>
   getOrderedCoreETFCodes(
     [latestCoreETFItem.value, ...sortedCoreETFTrendItems.value].filter(
@@ -325,7 +424,7 @@ const coreETFCodes = computed(() =>
 );
 const coreETFSummaryItems = computed<CoreETFSummaryItem[]>(() =>
   coreETFCodes.value.map(code => {
-    const etf = latestCoreETFItem.value?.etfs?.[code];
+    const etf = latestCoreETFItem.value?.value?.[code];
 
     return {
       code,
@@ -347,7 +446,14 @@ async function loadData() {
   errorMessage.value = "";
 
   try {
-    const { items } = await getZhongxinFutureShortPosition();
+    const end_date = dayjs().format("YYYY-MM-DD");
+    const start_date = dayjs(end_date)
+      .subtract(365, "day")
+      .format("YYYY-MM-DD");
+    const { items } = await getZhongxinFutureShortPosition({
+      start_date,
+      end_date
+    });
     latestItem.value = getLatestItem(items ?? []);
   } catch {
     latestItem.value = undefined;
@@ -362,7 +468,11 @@ async function loadMarketCoreData() {
   marketCoreErrorMessage.value = "";
 
   try {
-    const { items } = await getMarketCoreData();
+    const end_date = dayjs().format("YYYY-MM-DD");
+    const start_date = dayjs(end_date)
+      .subtract(365, "day")
+      .format("YYYY-MM-DD");
+    const { items } = await getMarketCoreData({ start_date, end_date });
     latestMarketCoreItem.value = getLatestMarketCoreItem(items ?? []);
   } catch {
     latestMarketCoreItem.value = undefined;
@@ -372,12 +482,35 @@ async function loadMarketCoreData() {
   }
 }
 
+async function loadDividendLowVolData() {
+  dividendLowVolLoading.value = true;
+  dividendLowVolErrorMessage.value = "";
+
+  try {
+    const end_date = dayjs().format("YYYY-MM-DD");
+    const start_date = dayjs(end_date)
+      .subtract(365, "day")
+      .format("YYYY-MM-DD");
+    const { items } = await getDividendLowVolData({ start_date, end_date });
+    latestDividendLowVolItem.value = getLatestDividendLowVolItem(items ?? []);
+  } catch {
+    latestDividendLowVolItem.value = undefined;
+    dividendLowVolErrorMessage.value = "红利低波数据加载失败，请稍后重试";
+  } finally {
+    dividendLowVolLoading.value = false;
+  }
+}
+
 async function loadCoreETFData() {
   coreETFLoading.value = true;
   coreETFErrorMessage.value = "";
 
   try {
-    const { items } = await getCoreETFData();
+    const end_date = dayjs().format("YYYY-MM-DD");
+    const start_date = dayjs(end_date)
+      .subtract(365, "day")
+      .format("YYYY-MM-DD");
+    const { items } = await getCoreETFData({ start_date, end_date });
     latestCoreETFItem.value = getLatestCoreETFItem(items ?? []);
     resetCoreETFTrendDateRange();
     await loadCoreETFTrendData();
@@ -430,6 +563,26 @@ async function loadMarketCoreTrendData() {
   }
 }
 
+async function loadDividendLowVolTrendData() {
+  const [start_date, end_date] = dividendLowVolTrendDateRange.value;
+
+  dividendLowVolTrendLoading.value = true;
+  dividendLowVolTrendErrorMessage.value = "";
+
+  try {
+    const { items } = await getDividendLowVolData({
+      start_date,
+      end_date
+    });
+    dividendLowVolTrendItems.value = items ?? [];
+  } catch {
+    dividendLowVolTrendItems.value = [];
+    dividendLowVolTrendErrorMessage.value = "红利低波趋势加载失败，请稍后重试";
+  } finally {
+    dividendLowVolTrendLoading.value = false;
+  }
+}
+
 async function loadCoreETFTrendData() {
   const [start_date, end_date] = coreETFTrendDateRange.value;
 
@@ -462,6 +615,13 @@ function getMarketCoreTrendEndDate() {
     : dayjs().format("YYYY-MM-DD");
 }
 
+function getDividendLowVolTrendEndDate() {
+  const latestDate = latestDividendLowVolItem.value?.date;
+  return latestDate && getTimestamp(latestDate)
+    ? latestDate
+    : dayjs().format("YYYY-MM-DD");
+}
+
 function getCoreETFTrendEndDate() {
   const latestDate = latestCoreETFItem.value?.date;
   return latestDate && getTimestamp(latestDate)
@@ -473,7 +633,7 @@ function resetCoreETFTrendDateRange() {
   const endDate = getCoreETFTrendEndDate();
 
   coreETFTrendDateRange.value = [
-    dayjs(endDate).subtract(1, "year").format("YYYY-MM-DD"),
+    dayjs(endDate).subtract(365, "day").format("YYYY-MM-DD"),
     endDate
   ];
 }
@@ -490,8 +650,20 @@ function openMarketCoreTrendDialog(metric: MarketCoreMetricConfig) {
   loadMarketCoreTrendData();
 }
 
+function openDividendLowVolTrendDialog() {
+  const endDate = getDividendLowVolTrendEndDate();
+
+  dividendLowVolTrendDateRange.value = [
+    dayjs(endDate).subtract(365, "day").format("YYYY-MM-DD"),
+    endDate
+  ];
+  dividendLowVolTrendDialogVisible.value = true;
+  loadDividendLowVolTrendData();
+}
+
 onMounted(() => {
   loadMarketCoreData();
+  loadDividendLowVolData();
   loadCoreETFData();
   loadData();
 });
@@ -561,6 +733,80 @@ onMounted(() => {
               </span>
             </div>
           </div>
+        </el-col>
+      </el-row>
+    </el-card>
+
+    <el-card shadow="never" class="mb-4">
+      <div class="mb-4 flex-bc flex-wrap gap-3">
+        <div>
+          <h2 class="text-lg font-medium">红利低波指数</h2>
+          <p class="mt-1 text-sm text-text_color_regular">
+            展示中证红利低波动指数 H30269 点位与 D/P1 股息率。
+          </p>
+        </div>
+        <div class="flex items-center gap-3">
+          <span
+            v-if="latestDividendLowVolItem?.date"
+            class="text-sm text-text_color_regular"
+          >
+            数据日期：{{ latestDividendLowVolItem.date }}
+          </span>
+          <el-button
+            :loading="dividendLowVolLoading"
+            @click="loadDividendLowVolData"
+          >
+            刷新
+          </el-button>
+        </div>
+      </div>
+
+      <el-alert
+        v-if="dividendLowVolErrorMessage"
+        class="mb-4"
+        :title="dividendLowVolErrorMessage"
+        type="error"
+        show-icon
+        :closable="false"
+      />
+
+      <el-skeleton v-if="dividendLowVolLoading" :rows="3" animated />
+
+      <el-empty
+        v-else-if="!hasDividendLowVolData"
+        description="暂无红利低波数据"
+      />
+
+      <el-row v-else :gutter="16">
+        <el-col
+          v-for="metric in dividendLowVolMetricCards"
+          :key="metric.field"
+          :xs="24"
+          :md="12"
+          class="mb-4"
+        >
+          <button
+            type="button"
+            :aria-label="`查看红利低波趋势：${metric.label}`"
+            class="market-core-card w-full cursor-pointer rounded-lg border border-(--el-border-color-light) bg-transparent p-4 text-left transition-all hover:border-(--el-color-danger)"
+            @click="openDividendLowVolTrendDialog"
+          >
+            <div class="flex-bc">
+              <span class="text-sm text-text_color_regular">
+                {{ metric.label }}
+              </span>
+              <span
+                class="inline-block size-2.5 rounded-full"
+                :style="{ backgroundColor: metric.color }"
+              />
+            </div>
+            <div class="mt-3 flex items-baseline gap-2">
+              <span class="text-2xl font-semibold">{{ metric.value }}</span>
+              <span class="text-sm text-text_color_regular">
+                {{ metric.unit }}
+              </span>
+            </div>
+          </button>
         </el-col>
       </el-row>
     </el-card>
@@ -819,6 +1065,49 @@ onMounted(() => {
         :values="marketCoreTrendValues"
         :label="selectedMarketCoreMetric.label"
         :unit="selectedMarketCoreMetric.unit"
+      />
+    </el-dialog>
+
+    <el-dialog
+      v-model="dividendLowVolTrendDialogVisible"
+      title="红利低波指数趋势"
+      width="80%"
+      top="6vh"
+    >
+      <div class="mb-4 flex-bc flex-wrap gap-3">
+        <span class="text-sm text-text_color_regular">
+          默认展示最新数据日期往前一年，可手动输入时间范围。
+        </span>
+        <el-date-picker
+          v-model="dividendLowVolTrendDateRange"
+          type="daterange"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          value-format="YYYY-MM-DD"
+          :clearable="false"
+          @change="loadDividendLowVolTrendData"
+        />
+      </div>
+
+      <el-alert
+        v-if="dividendLowVolTrendErrorMessage"
+        class="mb-4"
+        :title="dividendLowVolTrendErrorMessage"
+        type="error"
+        show-icon
+        :closable="false"
+      />
+
+      <el-skeleton v-if="dividendLowVolTrendLoading" :rows="8" animated />
+      <el-empty
+        v-else-if="!hasDividendLowVolTrendData"
+        description="暂无红利低波趋势数据"
+      />
+      <DividendLowVolTrendChart
+        v-else
+        :dates="dividendLowVolTrendDates"
+        :series="dividendLowVolTrendSeries"
       />
     </el-dialog>
   </div>

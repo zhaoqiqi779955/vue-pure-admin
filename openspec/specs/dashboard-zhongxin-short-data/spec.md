@@ -22,12 +22,12 @@ The system SHALL provide a top-level `dashboard` menu entry labeled `核心看�
 
 ### Requirement: Fetch latest Zhongxin short position data by default
 
-The system SHALL request the latest Zhongxin short position data from `GET /api/data/future/zhongxin` without query parameters when the page loads.
+The system SHALL request the latest Zhongxin short position data from `GET /api/dashboard/daily` with `data_type=zhongxin_future` and a closed date range no longer than 366 calendar days when the page loads. The frontend SHALL unwrap each daily-dashboard item's `value` object for the existing Zhongxin short position panel.
 
 #### Scenario: Default page load request
 
 - **WHEN** the user enters the Zhongxin short position page
-- **THEN** the frontend MUST call `/api/data/future/zhongxin` without `start_date` or `end_date`
+- **THEN** the frontend MUST call `/api/dashboard/daily` with `data_type=zhongxin_future`, an end date of the current date, and a start date 365 days earlier
 
 #### Scenario: Latest record selection
 

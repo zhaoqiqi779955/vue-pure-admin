@@ -71,8 +71,9 @@ menus:
   pureHome: Home
   pureDashboard: Data Dashboard
   pureZhongxinShort: Core Data
-  pureScheduler: Scheduler
-  pureSchedulerTasks: Scheduled Tasks
+  pureMacroLiquidity: Macro Liquidity
+  pureScheduler: Data Update Records
+  pureSchedulerTasks: Data Update Records
   pureTaskManagementRoot: Task Management
   pureTaskManagement: Task Management
   pureTaskManagementTasks: Task List

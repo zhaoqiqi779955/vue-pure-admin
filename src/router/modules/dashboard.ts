@@ -20,6 +20,14 @@ export default {
       meta: {
         title: $t("menus.pureZhongxinShort")
       }
+    },
+    {
+      path: "/dashboard/macro-liquidity",
+      name: "DashboardMacroLiquidity",
+      component: () => import("@/views/dashboard/macro-liquidity/index.vue"),
+      meta: {
+        title: $t("menus.pureMacroLiquidity")
+      }
     }
   ]
 } satisfies RouteConfigsTable;
