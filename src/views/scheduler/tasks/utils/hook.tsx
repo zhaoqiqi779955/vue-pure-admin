@@ -24,7 +24,12 @@ export const dataTypeOptions: Array<{
   { label: "大盘核心", value: "market_core" },
   { label: "核心指数", value: "market_indices" },
   { label: "中信空单", value: "zhongxin_future" },
-  { label: "红利低波", value: "dividend_low_vol" }
+  { label: "红利低波", value: "dividend_low_vol" },
+  { label: "资金利率 DR007", value: "money_market" },
+  { label: "中债收益率曲线", value: "china_bond_curve" },
+  { label: "国债期货主力", value: "treasury_futures" },
+  { label: "人民币中间价", value: "rmb_fx" },
+  { label: "美国国债收益率", value: "us_treasury" }
 ];
 
 export const statusOptions: Array<{
@@ -109,6 +114,11 @@ function getSchedulerJobLabel(jobName: string) {
     market_indices_daily: "核心指数定时更新",
     zhongxin_future_daily: "中信空单定时更新",
     dividend_low_vol_daily: "红利低波定时更新",
+    money_market_daily: "资金利率 DR007 定时更新",
+    china_bond_curve_daily: "中债收益率曲线定时更新",
+    treasury_futures_daily: "国债期货主力定时更新",
+    rmb_fx_daily: "人民币中间价定时更新",
+    us_treasury_daily: "美国国债收益率定时更新",
     missing_date_scan_daily: "缺失日期扫描"
   };
   return labels[jobName] ?? jobName;

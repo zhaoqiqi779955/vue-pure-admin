@@ -5,7 +5,12 @@ export type DataUpdateType =
   | "market_core"
   | "market_indices"
   | "zhongxin_future"
-  | "dividend_low_vol";
+  | "dividend_low_vol"
+  | "money_market"
+  | "china_bond_curve"
+  | "treasury_futures"
+  | "rmb_fx"
+  | "us_treasury";
 
 export type DataUpdateTriggerSource = "api" | "scheduler" | "repair_scheduler";
 
