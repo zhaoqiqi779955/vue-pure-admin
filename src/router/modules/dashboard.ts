@@ -22,6 +22,14 @@ export default {
       }
     },
     {
+      path: "/dashboard/market-indices",
+      name: "DashboardMarketIndices",
+      component: () => import("@/views/dashboard/market-indices/index.vue"),
+      meta: {
+        title: "核心指数行情"
+      }
+    },
+    {
       path: "/dashboard/macro-liquidity",
       name: "DashboardMacroLiquidity",
       component: () => import("@/views/dashboard/macro-liquidity/index.vue"),

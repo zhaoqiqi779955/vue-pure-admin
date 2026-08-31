@@ -28,6 +28,47 @@ search:
   pureDragSort: （可拖拽排序）
   pureEmpty: 暂无搜索结果
   purePlaceholder: 搜索菜单（支持拼音搜索）
+macroMarket:
+  title: 市场定价
+  subtitle: 资金利率、债券、信用与外部约束
+  viewSource: 查看来源
+  dateRange:
+    separator: 至
+    start: 开始日期
+    end: 结束日期
+  states:
+    loadError: 加载日频市场数据失败
+    retry: 重试
+    partial: 部分市场序列暂无数据，已有序列仍按各自观察日期展示。
+    stale: 部分市场序列距查询结束日超过七天，请核对来源更新时间。
+    chartEmpty: 所选日期暂无数据
+    empty: 当前查询范围内暂无日频市场数据
+  quality:
+    official: 官方
+    degraded: 降级
+  units:
+    points: 点
+  charts:
+    chinaYields: 中国国债收益率
+    treasuryFutures: 国债期货主力合约
+    usTreasuryYields: 美国国债收益率
+  series:
+    dr007: DR007
+    cn_govt_10y: 中国10年国债收益率
+    cn_govt_30y: 中国30年国债收益率
+    cn_govt_30y_10y_spread: 30Y-10Y 期限利差
+    cgb_futures_t: 10年期国债期货
+    cgb_futures_tl: 30年期国债期货
+    credit_spread_aaa_3y: 3年AAA中短票信用利差
+    usd_cny_midpoint: 美元兑人民币中间价
+    us_treasury_10y: 美国10年国债收益率
+    us_treasury_30y: 美国30年国债收益率
+  tooltip:
+    contract: 合约
+    creditYield: 信用收益率
+    governmentYield: 国债收益率
+    thirtyYearYield: 30年收益率
+    tenYearYield: 10年收益率
 panel:
   pureSystemSet: 系统配置
   pureCloseSystemSet: 关闭配置
@@ -74,9 +115,6 @@ menus:
   pureMacroLiquidity: 宏观流动性
   pureScheduler: 数据更新记录
   pureSchedulerTasks: 数据更新记录
-  pureTaskManagementRoot: 任务管理
-  pureTaskManagement: 任务管理
-  pureTaskManagementTasks: 任务列表
   pureLogin: 登录
   pureEmpty: 无Layout页
   pureTable: 表格

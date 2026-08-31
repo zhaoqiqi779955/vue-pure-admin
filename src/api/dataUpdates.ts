@@ -3,6 +3,7 @@ import { http } from "@/utils/http";
 export type DataUpdateType =
   | "core_etf"
   | "market_core"
+  | "market_indices"
   | "zhongxin_future"
   | "dividend_low_vol";
 

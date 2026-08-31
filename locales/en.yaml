@@ -28,6 +28,47 @@ search:
   pureDragSort: （Drag Sort）
   pureEmpty: Empty
   purePlaceholder: Search Menu
+macroMarket:
+  title: Market Pricing
+  subtitle: Funding rates, bonds, credit and external conditions
+  viewSource: View source
+  dateRange:
+    separator: to
+    start: Start date
+    end: End date
+  states:
+    loadError: Failed to load daily market data
+    retry: Retry
+    partial: Some market series are unavailable; available observations remain visible.
+    stale: Some market series are more than seven days behind the selected end date.
+    chartEmpty: No data for the selected dates
+    empty: No daily market data in the selected range
+  quality:
+    official: Official
+    degraded: Degraded
+  units:
+    points: pts
+  charts:
+    chinaYields: China Government Bond Yields
+    treasuryFutures: Treasury Futures Main Contract
+    usTreasuryYields: US Treasury Yields
+  series:
+    dr007: DR007
+    cn_govt_10y: China 10Y Government Bond Yield
+    cn_govt_30y: China 30Y Government Bond Yield
+    cn_govt_30y_10y_spread: China 30Y-10Y Term Spread
+    cgb_futures_t: China 10Y Treasury Futures
+    cgb_futures_tl: China 30Y Treasury Futures
+    credit_spread_aaa_3y: 3Y AAA MTN Credit Spread
+    usd_cny_midpoint: USD/CNY Central Parity
+    us_treasury_10y: US 10Y Treasury Yield
+    us_treasury_30y: US 30Y Treasury Yield
+  tooltip:
+    contract: Contract
+    creditYield: Credit yield
+    governmentYield: Government yield
+    thirtyYearYield: 30Y yield
+    tenYearYield: 10Y yield
 panel:
   pureSystemSet: System Configs
   pureCloseSystemSet: Close System Configs
@@ -74,9 +115,6 @@ menus:
   pureMacroLiquidity: Macro Liquidity
   pureScheduler: Data Update Records
   pureSchedulerTasks: Data Update Records
-  pureTaskManagementRoot: Task Management
-  pureTaskManagement: Task Management
-  pureTaskManagementTasks: Task List
   pureLogin: Login
   pureEmpty: Empty Page
   pureTable: Table

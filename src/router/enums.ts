@@ -4,7 +4,6 @@ const home = 0, // 平台规定只有 home 路由的 rank 才能为 0 ，所以�
   dashboard = 1,
   scheduler = 2,
   chatai = 3,
-  taskManagement = 4,
   vueflow = 5,
   ganttastic = 6,
   components = 7,
@@ -62,6 +61,5 @@ export {
   guide,
   menuoverflow,
   dashboard,
-  scheduler,
-  taskManagement
+  scheduler
 };

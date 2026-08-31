@@ -22,6 +22,7 @@ export const dataTypeOptions: Array<{
 }> = [
   { label: "核心 ETF", value: "core_etf" },
   { label: "大盘核心", value: "market_core" },
+  { label: "核心指数", value: "market_indices" },
   { label: "中信空单", value: "zhongxin_future" },
   { label: "红利低波", value: "dividend_low_vol" }
 ];
@@ -105,6 +106,7 @@ function getSchedulerJobLabel(jobName: string) {
   const labels: Record<string, string> = {
     core_etf_daily: "核心 ETF 定时更新",
     market_core_daily: "大盘核心定时更新",
+    market_indices_daily: "核心指数定时更新",
     zhongxin_future_daily: "中信空单定时更新",
     dividend_low_vol_daily: "红利低波定时更新",
     missing_date_scan_daily: "缺失日期扫描"

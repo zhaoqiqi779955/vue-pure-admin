@@ -166,6 +166,49 @@ export type DividendLowVolDataResult = {
   items: DividendLowVolDataItem[];
 };
 
+export type MarketIndexMarket = "CN" | "HK";
+export type MarketIndexStatus = "open" | "closed";
+
+export type MarketIndexQuote = {
+  code: string;
+  name: string;
+  market: MarketIndexMarket;
+  market_status: MarketIndexStatus;
+  trade_date: string | null;
+  close: number | null;
+  change_amount: number | null;
+  change_percent: number | null;
+  source: string | null;
+};
+
+export type MarketIndicesDataParams = {
+  start_date: string;
+  end_date: string;
+};
+
+export type MarketIndicesDataItem = {
+  date: string;
+  source: string;
+  quality: "fresh" | "degraded";
+  collected_at: string;
+  indices: Record<string, MarketIndexQuote>;
+};
+
+type MarketIndicesDailyItem = Omit<MarketIndicesDataItem, "indices"> & {
+  value: { indices: Record<string, MarketIndexQuote> };
+};
+
+type MarketIndicesDailyResult = {
+  data_type: "market_indices";
+  start_date: string;
+  end_date: string;
+  items: MarketIndicesDailyItem[];
+};
+
+export type MarketIndicesDataResult = {
+  items: MarketIndicesDataItem[];
+};
+
 export type MoneySupplyQueryParams = {
   start_month: string;
   end_month: string;
@@ -180,6 +223,7 @@ export type MoneySupplyItem = {
   m2_yoy: number | null;
   m1_m2_yoy_gap: number | null;
   m1_comparable: boolean;
+  m1_yoy_source: "derived" | "official_reported" | null;
   m1_revision: number | null;
   m2_revision: number | null;
   m1_methodology_version: string | null;
@@ -198,6 +242,78 @@ export type MoneySupplyResult = {
   items: MoneySupplyItem[];
 };
 
+export type MonthlySeriesObservation = {
+  value: string;
+  revision: number;
+  methodology_version: string;
+  published_at: string | null;
+  collected_at: string;
+  source: string;
+  source_url: string;
+  quality: "fresh" | "degraded";
+  reported_yoy_percent: string | null;
+};
+
+export type MonthlySeries = {
+  latest: MonthlySeriesObservation | null;
+  revisions: MonthlySeriesObservation[];
+};
+
+export type MonthlyFlowSeries = {
+  ytd: MonthlySeries;
+  monthly_value: string | null;
+  derivation_state: "derived_from_ytd" | "missing_base" | "missing";
+};
+
+export type MacroLiquidityItem = {
+  month: string;
+  m1: MonthlySeries;
+  m2: MonthlySeries;
+  m1_yoy: number | null;
+  m2_yoy: number | null;
+  m1_m2_yoy_gap: number | null;
+  m1_comparable: boolean;
+  m1_yoy_source: "derived" | "official_reported" | null;
+  social_financing_stock: MonthlySeries;
+  social_financing_increment: MonthlyFlowSeries;
+  enterprise_medium_long_term_loan_increment: MonthlyFlowSeries;
+};
+
+export type MacroLiquidityResult = {
+  start_month: string;
+  end_month: string;
+  revisions: "latest" | "all";
+  unit: "亿元";
+  items: MacroLiquidityItem[];
+};
+
+export type MacroMarketObservation = {
+  date: string;
+  value: string;
+  source: string;
+  quality: "fresh" | "degraded";
+  collected_at: string;
+  source_url: string | null;
+  published_at: string | null;
+  components: Record<string, string>;
+  metadata: Record<string, string | number | null>;
+};
+
+export type MacroMarketSeries = {
+  code: string;
+  name: string;
+  category: "funding" | "china_rates" | "rates_trading" | "credit" | "external";
+  unit: "%" | "bp" | "price" | "CNY/USD";
+  methodology: string;
+  observations: MacroMarketObservation[];
+};
+
+export type MacroMarketResult = {
+  start_date: string;
+  end_date: string;
+  series: MacroMarketSeries[];
+};
+
 export type MonthlyUpdateRun = {
   id: number;
   job_name: string;
@@ -214,6 +330,23 @@ export type MonthlyUpdateRun = {
   pending_targets: number;
   failed_targets: number;
   error_summary: string | null;
+  lease_owner: string | null;
+  lease_until: string | null;
+  submitted_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+};
+
+export type MonthlyUpdateRunList = {
+  total: number;
+  limit: number;
+  offset: number;
+  runs: MonthlyUpdateRun[];
+};
+
+export type CreditIndicatorUpdateResult = {
+  runs: MonthlyUpdateRun[];
+  task_urls: string[];
 };
 
 /** 月度 M1/M2 数据；同比和增速差由后端按口径可比性计算。 */
@@ -226,6 +359,25 @@ export const getMoneySupply = (params: MoneySupplyQueryParams) =>
     }
   );
 
+/** 月度宏观流动性聚合数据；流量月值由后端基于官方累计值派生。 */
+export const getMacroLiquidity = (params: MoneySupplyQueryParams) =>
+  http.request<MacroLiquidityResult>(
+    "get",
+    "/api/dashboard/monthly/macro-liquidity",
+    {
+      params: { ...params, revisions: params.revisions ?? "latest" }
+    }
+  );
+
+/** 日频资金、利率、信用、汇率与海外利率聚合数据。 */
+export const getMacroMarket = (params: {
+  start_date: string;
+  end_date: string;
+}) =>
+  http.request<MacroMarketResult>("get", "/api/dashboard/daily/macro-markets", {
+    params
+  });
+
 export const submitMoneySupplyUpdate = (params: {
   start_month: string;
   end_month: string;
@@ -234,6 +386,34 @@ export const submitMoneySupplyUpdate = (params: {
     "post",
     "/api/dashboard/monthly/money-supply/updates",
     { data: params }
+  );
+
+export const submitCreditIndicatorUpdate = (params: {
+  start_month: string;
+  end_month: string;
+}) =>
+  http.request<CreditIndicatorUpdateResult>(
+    "post",
+    "/api/dashboard/monthly/credit-indicators/updates",
+    { data: params }
+  );
+
+export const getCreditIndicatorUpdates = (params?: {
+  status?: MonthlyUpdateRun["status"];
+  trigger_source?: MonthlyUpdateRun["trigger_source"];
+  limit?: number;
+  offset?: number;
+}) =>
+  http.request<MonthlyUpdateRunList>(
+    "get",
+    "/api/dashboard/monthly/credit-indicators/updates",
+    { params }
+  );
+
+export const getCreditIndicatorUpdate = (runId: number) =>
+  http.request<MonthlyUpdateRun>(
+    "get",
+    `/api/dashboard/monthly/credit-indicators/updates/${runId}`
   );
 
 /** 中信期指空单数据 */
@@ -299,4 +479,23 @@ export const getDividendLowVolData = async (
       ...item.value
     }))
   } satisfies DividendLowVolDataResult;
+};
+
+/** 六项核心 A 股与香港市场指数日度行情。 */
+export const getMarketIndicesData = async (params: MarketIndicesDataParams) => {
+  const result = await http.request<MarketIndicesDailyResult>(
+    "get",
+    "/api/dashboard/daily",
+    { params: { ...params, data_type: "market_indices" } }
+  );
+
+  return {
+    items: result.items.map(item => ({
+      date: item.date,
+      source: item.source,
+      quality: item.quality,
+      collected_at: item.collected_at,
+      indices: item.value.indices
+    }))
+  } satisfies MarketIndicesDataResult;
 };
