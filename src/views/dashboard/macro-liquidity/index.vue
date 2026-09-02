@@ -202,6 +202,9 @@ const marketHighlights = computed(() =>
     "cn_govt_30y",
     "credit_spread_aaa_3y",
     "usd_cny_midpoint",
+    "us_fed_funds_target_lower",
+    "us_fed_funds_target_upper",
+    "us_fed_funds_effective",
     "us_treasury_10y"
   ].flatMap(code => {
     const series = marketSeriesByCode.value.get(code);
@@ -247,6 +250,16 @@ const marketCharts = computed(() => [
     title: t("macroMarket.series.usd_cny_midpoint"),
     unit: "CNY/USD",
     series: selectMarketSeries("usd_cny_midpoint")
+  },
+  {
+    key: "fed-funds",
+    title: t("macroMarket.charts.usFedFunds"),
+    unit: "%",
+    series: selectMarketSeries(
+      "us_fed_funds_target_lower",
+      "us_fed_funds_target_upper",
+      "us_fed_funds_effective"
+    )
   },
   {
     key: "us-yields",

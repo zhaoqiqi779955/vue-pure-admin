@@ -51,6 +51,7 @@ macroMarket:
   charts:
     chinaYields: China Government Bond Yields
     treasuryFutures: Treasury Futures Main Contract
+    usFedFunds: US Federal Funds Rate
     usTreasuryYields: US Treasury Yields
   series:
     dr007: DR007
@@ -61,6 +62,9 @@ macroMarket:
     cgb_futures_tl: China 30Y Treasury Futures
     credit_spread_aaa_3y: 3Y AAA MTN Credit Spread
     usd_cny_midpoint: USD/CNY Central Parity
+    us_fed_funds_target_lower: Federal Funds Target Lower Limit
+    us_fed_funds_target_upper: Federal Funds Target Upper Limit
+    us_fed_funds_effective: Effective Federal Funds Rate
     us_treasury_10y: US 10Y Treasury Yield
     us_treasury_30y: US 30Y Treasury Yield
   tooltip:

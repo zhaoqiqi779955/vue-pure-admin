@@ -10,7 +10,8 @@ export type DataUpdateType =
   | "china_bond_curve"
   | "treasury_futures"
   | "rmb_fx"
-  | "us_treasury";
+  | "us_treasury"
+  | "us_fed_funds";
 
 export type DataUpdateTriggerSource = "api" | "scheduler" | "repair_scheduler";
 

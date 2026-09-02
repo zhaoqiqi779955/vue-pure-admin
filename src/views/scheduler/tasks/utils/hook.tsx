@@ -29,7 +29,8 @@ export const dataTypeOptions: Array<{
   { label: "中债收益率曲线", value: "china_bond_curve" },
   { label: "国债期货主力", value: "treasury_futures" },
   { label: "人民币中间价", value: "rmb_fx" },
-  { label: "美国国债收益率", value: "us_treasury" }
+  { label: "美国国债收益率", value: "us_treasury" },
+  { label: "美国联邦基金利率", value: "us_fed_funds" }
 ];
 
 export const statusOptions: Array<{
@@ -119,6 +120,7 @@ function getSchedulerJobLabel(jobName: string) {
     treasury_futures_daily: "国债期货主力定时更新",
     rmb_fx_daily: "人民币中间价定时更新",
     us_treasury_daily: "美国国债收益率定时更新",
+    us_fed_funds_daily: "美国联邦基金利率定时更新",
     missing_date_scan_daily: "缺失日期扫描"
   };
   return labels[jobName] ?? jobName;

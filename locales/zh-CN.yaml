@@ -51,6 +51,7 @@ macroMarket:
   charts:
     chinaYields: 中国国债收益率
     treasuryFutures: 国债期货主力合约
+    usFedFunds: 美国联邦基金利率
     usTreasuryYields: 美国国债收益率
   series:
     dr007: DR007
@@ -61,6 +62,9 @@ macroMarket:
     cgb_futures_tl: 30年期国债期货
     credit_spread_aaa_3y: 3年AAA中短票信用利差
     usd_cny_midpoint: 美元兑人民币中间价
+    us_fed_funds_target_lower: 联邦基金利率目标下限
+    us_fed_funds_target_upper: 联邦基金利率目标上限
+    us_fed_funds_effective: 有效联邦基金利率
     us_treasury_10y: 美国10年国债收益率
     us_treasury_30y: 美国30年国债收益率
   tooltip:
