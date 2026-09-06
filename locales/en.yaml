@@ -117,6 +117,8 @@ menus:
   pureDashboard: Data Dashboard
   pureZhongxinShort: Core Data
   pureMacroLiquidity: Macro Liquidity
+  pureIndustryResearch: Industry Research
+  pureHogCycle: Hog Cycle
   pureScheduler: Data Update Records
   pureSchedulerTasks: Data Update Records
   pureLogin: Login

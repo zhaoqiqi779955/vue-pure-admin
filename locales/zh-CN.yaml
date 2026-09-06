@@ -117,6 +117,8 @@ menus:
   pureDashboard: 数据看板
   pureZhongxinShort: 核心数据
   pureMacroLiquidity: 宏观流动性
+  pureIndustryResearch: 行业研究
+  pureHogCycle: 生猪周期
   pureScheduler: 数据更新记录
   pureSchedulerTasks: 数据更新记录
   pureLogin: 登录
