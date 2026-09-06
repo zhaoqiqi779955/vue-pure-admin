@@ -4,10 +4,12 @@ import { computed, onMounted, ref } from "vue";
 import {
   getCoreETFData,
   getDividendLowVolData,
+  getDividendYieldSpread,
   getMarketCoreData,
   getZhongxinFutureShortPosition,
   type CoreETFDataItem,
   type DividendLowVolDataItem,
+  type MacroMarketObservation,
   type MarketCoreDataItem,
   type ZhongxinFutureShortPositionItem
 } from "@/api/dashboard";
@@ -78,6 +80,9 @@ const dividendLowVolTrendDialogVisible = ref(false);
 const dividendLowVolTrendLoading = ref(false);
 const dividendLowVolTrendErrorMessage = ref("");
 const dividendLowVolTrendItems = ref<DividendLowVolDataItem[]>([]);
+const dividendYieldSpreadLoading = ref(false);
+const dividendYieldSpreadErrorMessage = ref("");
+const dividendYieldSpreadObservations = ref<MacroMarketObservation[]>([]);
 const trendDialogVisible = ref(false);
 const trendLoading = ref(false);
 const trendErrorMessage = ref("");
@@ -95,6 +100,10 @@ const dividendLowVolTrendDateRange = ref<[string, string]>([
   dayjs().format("YYYY-MM-DD")
 ]);
 const coreETFTrendDateRange = ref<[string, string]>([
+  dayjs().subtract(365, "day").format("YYYY-MM-DD"),
+  dayjs().format("YYYY-MM-DD")
+]);
+const dividendYieldSpreadDateRange = ref<[string, string]>([
   dayjs().subtract(365, "day").format("YYYY-MM-DD"),
   dayjs().format("YYYY-MM-DD")
 ]);
@@ -415,6 +424,34 @@ const dividendLowVolTrendSeries = computed<DividendLowVolTrendSeriesItem[]>(
 const hasDividendLowVolTrendData = computed(
   () => sortedDividendLowVolTrendItems.value.length > 0
 );
+const sortedDividendYieldSpreadObservations = computed(() =>
+  [...dividendYieldSpreadObservations.value]
+    .filter(item => item && item.date)
+    .sort((prev, next) => getTimestamp(prev.date) - getTimestamp(next.date))
+);
+const latestDividendYieldSpreadObservation = computed(
+  () =>
+    sortedDividendYieldSpreadObservations.value[
+      sortedDividendYieldSpreadObservations.value.length - 1
+    ]
+);
+const hasDividendYieldSpreadData = computed(() =>
+  Boolean(latestDividendYieldSpreadObservation.value)
+);
+const dividendYieldSpreadLatestValue = computed(() =>
+  formatMetricValue(latestDividendYieldSpreadObservation.value?.value, 4)
+);
+const dividendYieldSpreadDates = computed(() =>
+  sortedDividendYieldSpreadObservations.value.map(item => item.date)
+);
+const dividendYieldSpreadSeries = computed<CoreETFLineSeriesItem[]>(() => [
+  {
+    name: "股息率-中债10Y 利差",
+    data: sortedDividendYieldSpreadObservations.value.map(item =>
+      getFiniteValue(item.value)
+    )
+  }
+]);
 const coreETFCodes = computed(() =>
   getOrderedCoreETFCodes(
     [latestCoreETFItem.value, ...sortedCoreETFTrendItems.value].filter(
@@ -499,6 +536,27 @@ async function loadDividendLowVolData() {
   } finally {
     dividendLowVolLoading.value = false;
   }
+}
+
+async function loadDividendYieldSpreadData() {
+  dividendYieldSpreadLoading.value = true;
+  dividendYieldSpreadErrorMessage.value = "";
+
+  try {
+    const [start_date, end_date] = dividendYieldSpreadDateRange.value;
+    const { series } = await getDividendYieldSpread({ start_date, end_date });
+    dividendYieldSpreadObservations.value = series?.observations ?? [];
+  } catch {
+    dividendYieldSpreadObservations.value = [];
+    dividendYieldSpreadErrorMessage.value = "股债利差数据加载失败，请稍后重试";
+  } finally {
+    dividendYieldSpreadLoading.value = false;
+  }
+}
+
+function refreshDividendLowVolSection() {
+  loadDividendLowVolData();
+  loadDividendYieldSpreadData();
 }
 
 async function loadCoreETFData() {
@@ -664,6 +722,7 @@ function openDividendLowVolTrendDialog() {
 onMounted(() => {
   loadMarketCoreData();
   loadDividendLowVolData();
+  loadDividendYieldSpreadData();
   loadCoreETFData();
   loadData();
 });
@@ -742,7 +801,8 @@ onMounted(() => {
         <div>
           <h2 class="text-lg font-medium">红利低波指数</h2>
           <p class="mt-1 text-sm text-text_color_regular">
-            展示中证红利低波动指数 H30269 点位与 D/P1 股息率。
+            展示中证红利低波动指数 H30269 点位、D/P1 股息率，及其与中债 10Y
+            的股债利差。
           </p>
         </div>
         <div class="flex items-center gap-3">
@@ -753,8 +813,8 @@ onMounted(() => {
             数据日期：{{ latestDividendLowVolItem.date }}
           </span>
           <el-button
-            :loading="dividendLowVolLoading"
-            @click="loadDividendLowVolData"
+            :loading="dividendLowVolLoading || dividendYieldSpreadLoading"
+            @click="refreshDividendLowVolSection"
           >
             刷新
           </el-button>
@@ -809,6 +869,77 @@ onMounted(() => {
           </button>
         </el-col>
       </el-row>
+
+      <el-divider content-position="left">
+        股债利差（红利低波股息率 - 中债 10Y）
+      </el-divider>
+
+      <el-alert
+        v-if="dividendYieldSpreadErrorMessage"
+        class="mb-4"
+        :title="dividendYieldSpreadErrorMessage"
+        type="error"
+        show-icon
+        :closable="false"
+      />
+
+      <el-skeleton v-if="dividendYieldSpreadLoading" :rows="6" animated />
+
+      <el-empty
+        v-else-if="!hasDividendYieldSpreadData"
+        description="暂无股债利差数据"
+      />
+
+      <template v-else>
+        <el-row :gutter="16">
+          <el-col :xs="24" :md="12" class="mb-4">
+            <div class="rounded-lg border border-(--el-border-color-light) p-4">
+              <div class="flex-bc">
+                <span class="text-sm text-text_color_regular">
+                  股息率 - 中债 10Y
+                </span>
+                <span
+                  class="inline-block size-2.5 rounded-full"
+                  :style="{ backgroundColor: '#409eff' }"
+                />
+              </div>
+              <div class="mt-3 flex items-baseline gap-2">
+                <span class="text-2xl font-semibold">
+                  {{ dividendYieldSpreadLatestValue }}
+                </span>
+                <span class="text-sm text-text_color_regular">个百分点</span>
+              </div>
+              <div
+                v-if="latestDividendYieldSpreadObservation?.date"
+                class="mt-2 text-xs text-text_color_regular"
+              >
+                数据日期：{{ latestDividendYieldSpreadObservation.date }}
+              </div>
+            </div>
+          </el-col>
+        </el-row>
+
+        <div class="rounded-lg border border-(--el-border-color-light) p-4">
+          <div class="mb-3 flex-bc flex-wrap gap-3">
+            <div class="font-medium">股债利差趋势</div>
+            <el-date-picker
+              v-model="dividendYieldSpreadDateRange"
+              type="daterange"
+              range-separator="至"
+              start-placeholder="开始日期"
+              end-placeholder="结束日期"
+              value-format="YYYY-MM-DD"
+              :clearable="false"
+              @change="loadDividendYieldSpreadData"
+            />
+          </div>
+          <CoreETFLineChart
+            :dates="dividendYieldSpreadDates"
+            :series="dividendYieldSpreadSeries"
+            unit="个百分点"
+          />
+        </div>
+      </template>
     </el-card>
 
     <el-card shadow="never" class="mb-4">

@@ -314,6 +314,27 @@ export type MacroMarketResult = {
   series: MacroMarketSeries[];
 };
 
+export type DividendYieldSpreadParams = {
+  start_date: string;
+  end_date: string;
+};
+
+/** 派生序列：红利低波股息率(D/P1) - 中债 10Y 收益率，单位为百分点。 */
+export type DividendYieldSpreadSeries = {
+  code: string;
+  name: string;
+  category: string;
+  unit: string;
+  methodology: string;
+  observations: MacroMarketObservation[];
+};
+
+export type DividendYieldSpreadResult = {
+  start_date: string;
+  end_date: string;
+  series: DividendYieldSpreadSeries;
+};
+
 export type MonthlyUpdateRun = {
   id: number;
   job_name: string;
@@ -377,6 +398,14 @@ export const getMacroMarket = (params: {
   http.request<MacroMarketResult>("get", "/api/dashboard/daily/macro-markets", {
     params
   });
+
+/** 派生指标：红利低波股息率(D/P1) - 中债 10Y 收益率（单位：百分点）。 */
+export const getDividendYieldSpread = (params: DividendYieldSpreadParams) =>
+  http.request<DividendYieldSpreadResult>(
+    "get",
+    "/api/dashboard/daily/dividend-yield-spread",
+    { params }
+  );
 
 export const submitMoneySupplyUpdate = (params: {
   start_month: string;

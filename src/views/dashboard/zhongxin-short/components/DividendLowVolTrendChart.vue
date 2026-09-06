@@ -17,6 +17,13 @@ type TooltipItem = {
   value?: unknown;
 };
 
+type AxisExtent = {
+  min: number;
+  max: number;
+};
+
+const AXIS_PADDING_RATIO = 0.08;
+
 const props = defineProps({
   dates: {
     type: Array as PropType<string[]>,
@@ -43,6 +50,21 @@ function formatChartValue(value: unknown, unit = "") {
   const text =
     typeof value === "number" ? value.toLocaleString() : String(value);
   return unit ? `${text} ${unit}` : text;
+}
+
+function getAxisPadding({ min, max }: AxisExtent) {
+  const range = max - min;
+  return range > 0
+    ? range * AXIS_PADDING_RATIO
+    : Math.max(Math.abs(min) * AXIS_PADDING_RATIO, 1);
+}
+
+function getAxisMin(extent: AxisExtent) {
+  return Math.max(0, extent.min - getAxisPadding(extent));
+}
+
+function getAxisMax(extent: AxisExtent) {
+  return extent.max + getAxisPadding(extent);
 }
 
 function isTooltipItem(value: unknown): value is TooltipItem {
@@ -101,6 +123,9 @@ watch(
         {
           type: "value",
           name: "点位",
+          scale: true,
+          min: getAxisMin,
+          max: getAxisMax,
           axisLabel: {
             formatter: (value: number) => value.toLocaleString()
           },
@@ -113,6 +138,9 @@ watch(
         {
           type: "value",
           name: "股息率",
+          scale: true,
+          min: getAxisMin,
+          max: getAxisMax,
           axisLabel: {
             formatter: (value: number) => `${value}%`
           },
