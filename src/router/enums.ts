@@ -2,8 +2,9 @@
 
 const home = 0, // 平台规定只有 home 路由的 rank 才能为 0 ，所以后端在返回 rank 的时候需要从非 0 开始
   dashboard = 1,
-  scheduler = 2,
-  chatai = 3,
+  industryResearch = 2,
+  scheduler = 3,
+  chatai = 4,
   vueflow = 5,
   ganttastic = 6,
   components = 7,
@@ -61,5 +62,6 @@ export {
   guide,
   menuoverflow,
   dashboard,
+  industryResearch,
   scheduler
 };
