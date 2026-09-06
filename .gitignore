@@ -15,6 +15,7 @@ tests/**/coverage/
 
 # Editor directories and files
 .idea
+.worktrees/
 *.suo
 *.ntvs*
 *.njsproj
