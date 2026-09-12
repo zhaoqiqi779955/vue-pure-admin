@@ -43,6 +43,48 @@ export type MarketCoreDataParams = {
   end_date: string;
 };
 
+export type FearGreedDataParams = {
+  start_date: string;
+  end_date: string;
+};
+
+export type FearGreedDataItem = {
+  date: string;
+  source: string;
+  quality: "fresh" | "degraded";
+  collected_at: string;
+  index_value: number;
+  benchmark_code: "000905";
+  ingestion_method: "scheduled_api" | "excel_import";
+  source_url: string | null;
+  source_file: string | null;
+  source_update_time: string | null;
+  upstream_client_version: string | null;
+  methodology_version: string | null;
+};
+
+export type FearGreedDataResult = {
+  items: FearGreedDataItem[];
+};
+
+type FearGreedDailyItem = {
+  date: string;
+  source: string;
+  quality: "fresh" | "degraded";
+  collected_at: string;
+  value: Omit<
+    FearGreedDataItem,
+    "date" | "source" | "quality" | "collected_at"
+  >;
+};
+
+type FearGreedDailyResult = {
+  data_type: "fear_greed_index";
+  start_date: string;
+  end_date: string;
+  items: FearGreedDailyItem[];
+};
+
 export type MarketCoreSources = {
   turnover: string;
   limit_counts: string;
@@ -480,6 +522,25 @@ export const getMarketCoreData = async (params: MarketCoreDataParams) => {
       ...item.value
     }))
   } satisfies MarketCoreDataResult;
+};
+
+/** A 股恐惧贪婪指数：适配日度数据面板的 fear_greed_index 快照响应。 */
+export const getFearGreedData = async (params: FearGreedDataParams) => {
+  const result = await http.request<FearGreedDailyResult>(
+    "get",
+    "/api/dashboard/daily",
+    { params: { ...params, data_type: "fear_greed_index" } }
+  );
+
+  return {
+    items: result.items.map(item => ({
+      date: item.date,
+      source: item.source,
+      quality: item.quality,
+      collected_at: item.collected_at,
+      ...item.value
+    }))
+  } satisfies FearGreedDataResult;
 };
 
 /** 核心 ETF 份额与净值数据 */

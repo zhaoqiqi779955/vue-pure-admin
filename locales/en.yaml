@@ -315,3 +315,39 @@ tableBar:
   purePinLeft: Pin Left
   purePinRight: Pin Right
   pureUnpin: Unpin
+fearGreed:
+  title: Fear & Greed Index
+  subtitle: A-share market sentiment compared with the CSI 500 closing level.
+  date: "Data date: {date}"
+  refresh: Refresh
+  latest: Latest index
+  unit: pts
+  source: "Source: {source}"
+  collectedAt: "Collected at: {time}"
+  range:
+    year: 1Y
+    all: All history
+    separator: to
+    start: Start date
+    end: End date
+  chart:
+    title: Sentiment and CSI 500 trend
+    index: Fear & Greed Index
+    csi500: CSI 500
+    indexSource: Index source
+    benchmarkSource: Benchmark source
+  states:
+    loadError: Failed to load the Fear & Greed Index. Please try again later.
+    benchmarkError: CSI 500 benchmark data failed to load; index data remains available.
+    benchmarkEmpty: No CSI 500 benchmark data in this range; index data remains available.
+    empty: No Fear & Greed Index data
+    chartEmpty: No Fear & Greed Index trend data for the selected dates
+    unavailable: Unavailable
+    stale: The Fear & Greed Index is behind the latest CSI 500 trading day. Please verify the source.
+  bands:
+    extremeFear: Extreme fear
+    fear: Fear
+    slightFear: Slight fear
+    slightGreed: Slight greed
+    greed: Greed
+    extremeGreed: Extreme greed

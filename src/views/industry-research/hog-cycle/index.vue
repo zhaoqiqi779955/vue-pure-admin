@@ -18,7 +18,7 @@ import HogDataHealthPanel from "./components/HogDataHealthPanel.vue";
 
 defineOptions({ name: "IndustryResearchHogCycle" });
 
-const LOOKBACK_DAYS = 400;
+const LOOKBACK_DAYS = 3660;
 
 const dateRange = ref<[string, string]>([
   dayjs().subtract(LOOKBACK_DAYS, "day").format("YYYY-MM-DD"),

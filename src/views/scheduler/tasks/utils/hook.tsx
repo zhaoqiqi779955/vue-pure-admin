@@ -25,6 +25,7 @@ export const dataTypeOptions: Array<{
   { label: "核心指数", value: "market_indices" },
   { label: "中信空单", value: "zhongxin_future" },
   { label: "红利低波", value: "dividend_low_vol" },
+  { label: "恐惧贪婪指数", value: "fear_greed_index" },
   { label: "资金利率 DR007", value: "money_market" },
   { label: "中债收益率曲线", value: "china_bond_curve" },
   { label: "国债期货主力", value: "treasury_futures" },

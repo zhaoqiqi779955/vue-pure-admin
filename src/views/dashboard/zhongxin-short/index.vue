@@ -1,16 +1,21 @@
 <script setup lang="ts">
 import dayjs from "dayjs";
 import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   getCoreETFData,
   getDividendLowVolData,
   getDividendYieldSpread,
+  getFearGreedData,
   getMarketCoreData,
+  getMarketIndicesData,
   getZhongxinFutureShortPosition,
   type CoreETFDataItem,
   type DividendLowVolDataItem,
+  type FearGreedDataItem,
   type MacroMarketObservation,
   type MarketCoreDataItem,
+  type MarketIndicesDataItem,
   type ZhongxinFutureShortPositionItem
 } from "@/api/dashboard";
 import CumulativeTrendChart, {
@@ -22,14 +27,23 @@ import CoreETFLineChart, {
 import DividendLowVolTrendChart, {
   type DividendLowVolTrendSeriesItem
 } from "./components/DividendLowVolTrendChart.vue";
+import FearGreedGauge from "./components/FearGreedGauge.vue";
+import FearGreedTrendChart from "./components/FearGreedTrendChart.vue";
 import MarketCoreTrendChart from "./components/MarketCoreTrendChart.vue";
 import ShortBarChart, {
   type ShortBarChartItem
 } from "./components/ShortBarChart.vue";
+import {
+  alignFearGreedTrend,
+  getFearGreedBand,
+  getLatestFearGreedItem,
+  isFearGreedStale
+} from "./fearGreed";
 
 defineOptions({
   name: "DashboardZhongxinShort"
 });
+const { t } = useI18n();
 
 type ShortField = keyof ZhongxinFutureShortPositionItem;
 type MarketCoreMetricField =
@@ -73,6 +87,12 @@ const marketCoreTrendDialogVisible = ref(false);
 const marketCoreTrendLoading = ref(false);
 const marketCoreTrendErrorMessage = ref("");
 const marketCoreTrendItems = ref<MarketCoreDataItem[]>([]);
+const fearGreedLoading = ref(false);
+const fearGreedErrorMessage = ref("");
+const benchmarkErrorMessage = ref("");
+const fearGreedItems = ref<FearGreedDataItem[]>([]);
+const marketIndicesItems = ref<MarketIndicesDataItem[]>([]);
+const fearGreedRangeMode = ref<"year" | "all" | "custom">("year");
 const dividendLowVolLoading = ref(false);
 const dividendLowVolErrorMessage = ref("");
 const latestDividendLowVolItem = ref<DividendLowVolDataItem>();
@@ -93,6 +113,10 @@ const trendDateRange = ref<[string, string]>([
 ]);
 const marketCoreTrendDateRange = ref<[string, string]>([
   dayjs().subtract(6, "month").format("YYYY-MM-DD"),
+  dayjs().format("YYYY-MM-DD")
+]);
+const fearGreedDateRange = ref<[string, string]>([
+  dayjs().subtract(365, "day").format("YYYY-MM-DD"),
   dayjs().format("YYYY-MM-DD")
 ]);
 const dividendLowVolTrendDateRange = ref<[string, string]>([
@@ -310,6 +334,37 @@ function toChartData(
 
 const hasData = computed(() => Boolean(latestItem.value));
 const hasMarketCoreData = computed(() => Boolean(latestMarketCoreItem.value));
+const latestFearGreedItem = computed(() =>
+  getLatestFearGreedItem(fearGreedItems.value)
+);
+const fearGreedTrendPoints = computed(() =>
+  alignFearGreedTrend(fearGreedItems.value, marketIndicesItems.value)
+);
+const hasFearGreedData = computed(() => Boolean(latestFearGreedItem.value));
+const hasFearGreedTrendData = computed(() =>
+  fearGreedTrendPoints.value.some(item => item.fearValue !== null)
+);
+const hasCSI500Data = computed(() =>
+  fearGreedTrendPoints.value.some(item => item.csi500Close !== null)
+);
+const fearGreedBand = computed(() =>
+  getFearGreedBand(latestFearGreedItem.value?.index_value)
+);
+const fearGreedBandLabel = computed(() =>
+  fearGreedBand.value
+    ? t(`fearGreed.bands.${fearGreedBand.value}`)
+    : t("fearGreed.states.unavailable")
+);
+const fearGreedIsStale = computed(() =>
+  isFearGreedStale(latestFearGreedItem.value?.date, fearGreedTrendPoints.value)
+);
+const fearGreedChartTexts = computed(() => ({
+  fearGreed: t("fearGreed.chart.index"),
+  csi500: t("fearGreed.chart.csi500"),
+  indexSource: t("fearGreed.chart.indexSource"),
+  benchmarkSource: t("fearGreed.chart.benchmarkSource"),
+  unavailable: t("fearGreed.states.unavailable")
+}));
 const hasDividendLowVolData = computed(() =>
   Boolean(latestDividendLowVolItem.value)
 );
@@ -323,6 +378,26 @@ const marketCoreMetricCards = computed(() =>
     value: formatMarketCoreValue(latestMarketCoreItem.value, metric.field)
   }))
 );
+
+function getFearGreedBandTagType() {
+  switch (fearGreedBand.value) {
+    case "extremeFear":
+    case "fear":
+      return "danger";
+    case "slightFear":
+      return "warning";
+    case "slightGreed":
+    case "greed":
+      return "success";
+    default:
+      return "info";
+  }
+}
+
+function getFearGreedSource(item: FearGreedDataItem | undefined) {
+  if (!item) return t("fearGreed.states.unavailable");
+  return item.source_url || item.source_file || item.source;
+}
 
 const dividendLowVolMetricCards = computed(() =>
   dividendLowVolMetrics.map(metric => ({
@@ -517,6 +592,53 @@ async function loadMarketCoreData() {
   } finally {
     marketCoreLoading.value = false;
   }
+}
+
+async function loadFearGreedData() {
+  const [start_date, end_date] = fearGreedDateRange.value;
+  fearGreedLoading.value = true;
+  fearGreedErrorMessage.value = "";
+  benchmarkErrorMessage.value = "";
+
+  const [fearGreedResult, marketIndicesResult] = await Promise.allSettled([
+    getFearGreedData({ start_date, end_date }),
+    getMarketIndicesData({ start_date, end_date })
+  ]);
+
+  if (fearGreedResult.status === "fulfilled") {
+    fearGreedItems.value = fearGreedResult.value.items ?? [];
+  } else {
+    fearGreedItems.value = [];
+    fearGreedErrorMessage.value = t("fearGreed.states.loadError");
+  }
+
+  if (marketIndicesResult.status === "fulfilled") {
+    marketIndicesItems.value = marketIndicesResult.value.items ?? [];
+  } else {
+    marketIndicesItems.value = [];
+    benchmarkErrorMessage.value = t("fearGreed.states.benchmarkError");
+  }
+
+  fearGreedLoading.value = false;
+}
+
+function setFearGreedRangeMode(mode: unknown) {
+  if (mode !== "year" && mode !== "all") return;
+
+  const endDate = dayjs().format("YYYY-MM-DD");
+  fearGreedRangeMode.value = mode;
+  fearGreedDateRange.value = [
+    mode === "all"
+      ? "2021-09-06"
+      : dayjs(endDate).subtract(365, "day").format("YYYY-MM-DD"),
+    endDate
+  ];
+  loadFearGreedData();
+}
+
+function onFearGreedDateRangeChange() {
+  fearGreedRangeMode.value = "custom";
+  loadFearGreedData();
 }
 
 async function loadDividendLowVolData() {
@@ -721,6 +843,7 @@ function openDividendLowVolTrendDialog() {
 
 onMounted(() => {
   loadMarketCoreData();
+  loadFearGreedData();
   loadDividendLowVolData();
   loadDividendYieldSpreadData();
   loadCoreETFData();
@@ -794,6 +917,140 @@ onMounted(() => {
           </div>
         </el-col>
       </el-row>
+    </el-card>
+
+    <el-card shadow="never" class="mb-4">
+      <div class="mb-4 flex-bc flex-wrap gap-3">
+        <div>
+          <h2 class="text-lg font-medium">{{ t("fearGreed.title") }}</h2>
+          <p class="mt-1 text-sm text-text_color_regular">
+            {{ t("fearGreed.subtitle") }}
+          </p>
+        </div>
+        <div class="flex items-center gap-3">
+          <span
+            v-if="latestFearGreedItem?.date"
+            class="text-sm text-text_color_regular"
+          >
+            {{ t("fearGreed.date", { date: latestFearGreedItem.date }) }}
+          </span>
+          <el-button :loading="fearGreedLoading" @click="loadFearGreedData">
+            {{ t("fearGreed.refresh") }}
+          </el-button>
+        </div>
+      </div>
+
+      <el-alert
+        v-if="fearGreedErrorMessage"
+        class="mb-4"
+        :title="fearGreedErrorMessage"
+        type="error"
+        show-icon
+        :closable="false"
+      />
+
+      <el-skeleton v-if="fearGreedLoading" :rows="8" animated />
+
+      <el-empty
+        v-else-if="!hasFearGreedData"
+        :description="t('fearGreed.states.empty')"
+      />
+
+      <template v-else>
+        <el-alert
+          v-if="fearGreedIsStale"
+          class="mb-4"
+          :title="t('fearGreed.states.stale')"
+          type="warning"
+          show-icon
+          :closable="false"
+        />
+        <el-alert
+          v-if="benchmarkErrorMessage || !hasCSI500Data"
+          class="mb-4"
+          :title="benchmarkErrorMessage || t('fearGreed.states.benchmarkEmpty')"
+          type="warning"
+          show-icon
+          :closable="false"
+        />
+
+        <el-row :gutter="16" class="mb-4">
+          <el-col :xs="24" :md="10">
+            <div class="rounded-lg border border-(--el-border-color-light) p-4">
+              <div class="flex-bc gap-3">
+                <span class="text-sm text-text_color_regular">
+                  {{ t("fearGreed.latest") }}
+                </span>
+                <el-tag :type="getFearGreedBandTagType()" effect="light">
+                  {{ fearGreedBandLabel }}
+                </el-tag>
+              </div>
+              <FearGreedGauge
+                class="mt-2"
+                :value="latestFearGreedItem?.index_value ?? 0"
+                :label="fearGreedBandLabel"
+                :unit="t('fearGreed.unit')"
+              />
+              <div class="mt-3 grid gap-1 text-xs text-text_color_regular">
+                <span>
+                  {{
+                    t("fearGreed.source", {
+                      source: getFearGreedSource(latestFearGreedItem)
+                    })
+                  }}
+                </span>
+                <span>
+                  {{
+                    t("fearGreed.collectedAt", {
+                      time:
+                        latestFearGreedItem?.collected_at ||
+                        t("fearGreed.states.unavailable")
+                    })
+                  }}
+                </span>
+              </div>
+            </div>
+          </el-col>
+        </el-row>
+
+        <div class="rounded-lg border border-(--el-border-color-light) p-4">
+          <div class="mb-3 flex-bc flex-wrap gap-3">
+            <div class="font-medium">{{ t("fearGreed.chart.title") }}</div>
+            <div class="flex flex-wrap items-center gap-3">
+              <el-radio-group
+                :model-value="fearGreedRangeMode"
+                @change="setFearGreedRangeMode"
+              >
+                <el-radio-button value="year">
+                  {{ t("fearGreed.range.year") }}
+                </el-radio-button>
+                <el-radio-button value="all">
+                  {{ t("fearGreed.range.all") }}
+                </el-radio-button>
+              </el-radio-group>
+              <el-date-picker
+                v-model="fearGreedDateRange"
+                type="daterange"
+                :range-separator="t('fearGreed.range.separator')"
+                :start-placeholder="t('fearGreed.range.start')"
+                :end-placeholder="t('fearGreed.range.end')"
+                value-format="YYYY-MM-DD"
+                :clearable="false"
+                @change="onFearGreedDateRangeChange"
+              />
+            </div>
+          </div>
+          <el-empty
+            v-if="!hasFearGreedTrendData"
+            :description="t('fearGreed.states.chartEmpty')"
+          />
+          <FearGreedTrendChart
+            v-else
+            :points="fearGreedTrendPoints"
+            :texts="fearGreedChartTexts"
+          />
+        </div>
+      </template>
     </el-card>
 
     <el-card shadow="never" class="mb-4">

@@ -121,6 +121,7 @@ watch(
     setOptions({
       tooltip: {
         trigger: "axis",
+        appendTo: "body",
         formatter: formatTooltip
       },
       legend: {

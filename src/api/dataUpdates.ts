@@ -6,6 +6,7 @@ export type DataUpdateType =
   | "market_indices"
   | "zhongxin_future"
   | "dividend_low_vol"
+  | "fear_greed_index"
   | "money_market"
   | "china_bond_curve"
   | "treasury_futures"

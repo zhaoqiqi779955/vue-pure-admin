@@ -315,3 +315,39 @@ tableBar:
   purePinLeft: 固定在左边
   purePinRight: 固定在右边
   pureUnpin: 取消固定
+fearGreed:
+  title: 恐惧贪婪指数
+  subtitle: 展示 A 股市场情绪，并与中证500收盘点位对照。
+  date: 数据日期：{date}
+  refresh: 刷新
+  latest: 最新指数
+  unit: 点
+  source: 来源：{source}
+  collectedAt: 采集时间：{time}
+  range:
+    year: 近一年
+    all: 全部历史
+    separator: 至
+    start: 开始日期
+    end: 结束日期
+  chart:
+    title: 情绪与中证500趋势
+    index: 恐惧贪婪指数
+    csi500: 中证500
+    indexSource: 指数来源
+    benchmarkSource: 基准来源
+  states:
+    loadError: 恐惧贪婪指数加载失败，请稍后重试
+    benchmarkError: 中证500基准数据加载失败，指数数据仍可查看。
+    benchmarkEmpty: 当前范围暂无中证500基准数据，指数数据仍可查看。
+    empty: 暂无恐惧贪婪指数数据
+    chartEmpty: 所选日期暂无恐惧贪婪指数趋势数据
+    unavailable: 暂不可用
+    stale: 恐惧贪婪指数较中证500最新交易日滞后，请核对数据源。
+  bands:
+    extremeFear: 极度恐惧
+    fear: 恐惧
+    slightFear: 偏恐惧
+    slightGreed: 偏贪婪
+    greed: 贪婪
+    extremeGreed: 极度贪婪
